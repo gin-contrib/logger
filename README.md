@@ -57,4 +57,16 @@ func main() {
 
 ## Screenshot:
 
+Run app server:
+
+```sh
+$ go run example/main.go
+```
+
+Test request:
+
+```sh
+$ curl http://localhost:8080/ping
+```
+
 <img src="./images/screen.png">
