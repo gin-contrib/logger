@@ -43,7 +43,10 @@ func main() {
 		Str("foo", "bar").
 		Logger()
 
-	r.Use(logger.SetLogger(subLog))
+	r.Use(logger.SetLogger(logger.Config{
+		Logger: &subLog,
+		UTC:    true,
+	}))
 
 	// Example ping request.
 	r.GET("/ping", func(c *gin.Context) {
