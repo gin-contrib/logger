@@ -38,6 +38,13 @@ func main() {
 	//   - Logs to stdout.
 	r.Use(logger.SetLogger())
 
+	// Custom logger
+	subLog := zerolog.New(os.Stdout).With().
+		Str("foo", "bar").
+		Logger()
+
+	r.Use(logger.SetLogger(subLog))
+
 	// Example ping request.
 	r.GET("/ping", func(c *gin.Context) {
 		c.String(200, "pong "+fmt.Sprint(time.Now().Unix()))
@@ -47,3 +54,5 @@ func main() {
 	r.Run(":8080")
 }
 ```
+
+<img src="./images/screen.png">
