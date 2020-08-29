@@ -50,22 +50,22 @@ func main() {
 
 	// Example ping request.
 	r.GET("/ping", func(c *gin.Context) {
-		c.String(200, "pong "+fmt.Sprint(time.Now().Unix()))
+		c.String(, "pong "+fmt.Sprint(time.Now().Unix()))
 	})
 
 	// Example skip path request.
 	r.GET("/skip", func(c *gin.Context) {
-		c.String(200, "pong "+fmt.Sprint(time.Now().Unix()))
+		c.String(http.StatusOK, "pong "+fmt.Sprint(time.Now().Unix()))
 	})
 
 	// Example skip path request.
 	r.GET("/regexp1", func(c *gin.Context) {
-		c.String(200, "pong "+fmt.Sprint(time.Now().Unix()))
+		c.String(http.StatusOK, "pong "+fmt.Sprint(time.Now().Unix()))
 	})
 
 	// Example skip path request.
 	r.GET("/regexp2", func(c *gin.Context) {
-		c.String(200, "pong "+fmt.Sprint(time.Now().Unix()))
+		c.String(http.StatusOK, "pong "+fmt.Sprint(time.Now().Unix()))
 	})
 
 	// Listen and Server in 0.0.0.0:8080
