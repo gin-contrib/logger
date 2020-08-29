@@ -1,5 +1,11 @@
 # logger
 
+[![Build Status](https://travis-ci.org/gin-contrib/logger.svg?branch=master)](https://travis-ci.org/gin-contrib/logger)
+[![codecov](https://codecov.io/gh/gin-contrib/logger/branch/master/graph/badge.svg)](https://codecov.io/gh/gin-contrib/logger)
+[![Go Report Card](https://goreportcard.com/badge/github.com/gin-contrib/logger)](https://goreportcard.com/report/github.com/gin-contrib/logger)
+[![GoDoc](https://godoc.org/github.com/gin-contrib/logger?status.svg)](https://godoc.org/github.com/gin-contrib/logger)
+[![Join the chat at https://gitter.im/gin-gonic/gin](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/gin-gonic/gin)
+
 Gin middleware/handler to logger url path using [rs/zerolog](https://github.com/rs/zerolog).
 
 ## Example
