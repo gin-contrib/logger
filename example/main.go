@@ -50,7 +50,7 @@ func main() {
 
 	// Example ping request.
 	r.GET("/ping", func(c *gin.Context) {
-		c.String(, "pong "+fmt.Sprint(time.Now().Unix()))
+		c.String(http.StatusOK, "pong "+fmt.Sprint(time.Now().Unix()))
 	})
 
 	// Example skip path request.
