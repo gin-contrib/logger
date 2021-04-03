@@ -79,7 +79,7 @@ func SetLogger(config ...Config) gin.HandlerFunc {
 				Str("path", path).
 				Str("ip", c.ClientIP()).
 				Dur("latency", latency).
-				Str("user-agent", c.Request.UserAgent()).
+				Str("user_agent", c.Request.UserAgent()).
 				Logger()
 
 			switch {
@@ -98,6 +98,5 @@ func SetLogger(config ...Config) gin.HandlerFunc {
 					Msg(msg)
 			}
 		}
-
 	}
 }
