@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"regexp"
 	"time"
@@ -12,9 +13,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-var (
-	rxURL = regexp.MustCompile(`^/regexp\d*`)
-)
+var rxURL = regexp.MustCompile(`^/regexp\d*`)
 
 func main() {
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)

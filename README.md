@@ -15,6 +15,7 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"regexp"
 	"time"
@@ -25,9 +26,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-var (
-	rxURL = regexp.MustCompile(`^/regexp\d*`)
-)
+var rxURL = regexp.MustCompile(`^/regexp\d*`)
 
 func main() {
 	zerolog.SetGlobalLevel(zerolog.InfoLevel)
@@ -63,7 +62,7 @@ func main() {
 
 	// Example ping request.
 	r.GET("/ping", func(c *gin.Context) {
-		c.String(, "pong "+fmt.Sprint(time.Now().Unix()))
+		c.String(http.StatusOK, "pong "+fmt.Sprint(time.Now().Unix()))
 	})
 
 	// Example skip path request.
