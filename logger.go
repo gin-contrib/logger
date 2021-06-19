@@ -67,7 +67,8 @@ func WithSkipPath(s []string) Option {
 	}
 }
 
-// WithSkipPath skip URL path by specfic pattern
+// WithWriter change the default output writer.
+// Default is gin.DefaultWriter
 func WithWriter(s io.Writer) Option {
 	return func(c *config) {
 		c.output = s
