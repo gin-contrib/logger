@@ -33,37 +33,47 @@ func main() {
 	// Add a logger middleware, which:
 	//   - Logs all requests, like a combined access and error log.
 	//   - Logs to stdout.
-	r.Use(logger.SetLogger())
+	// r.Use(logger.SetLogger())
 
-	// Custom logger
-	subLog := zerolog.New(os.Stdout).With().
-		Str("foo", "bar").
-		Logger()
-
-	r.Use(logger.SetLogger(logger.Config{
-		Logger:         &subLog,
-		UTC:            true,
-		SkipPath:       []string{"/skip"},
-		SkipPathRegexp: rxURL,
-	}))
+	// Example pong request.
+	r.GET("/pong", logger.SetLogger(), func(c *gin.Context) {
+		c.String(http.StatusOK, "pong "+fmt.Sprint(time.Now().Unix()))
+	})
 
 	// Example ping request.
-	r.GET("/ping", func(c *gin.Context) {
+	r.GET("/ping", logger.SetLogger(
+		logger.WithSkipPath([]string{"/skip"}),
+		logger.WithUTC(true),
+		logger.WithSkipPathRegexp(rxURL),
+		logger.WithLogger(func(c *gin.Context, latency time.Duration) zerolog.Logger {
+			return zerolog.New(os.Stdout).With().
+				Str("foo", "bar").
+				Str("path", c.Request.URL.Path).
+				Dur("latency", latency).
+				Logger()
+		}),
+	), func(c *gin.Context) {
 		c.String(http.StatusOK, "pong "+fmt.Sprint(time.Now().Unix()))
 	})
 
 	// Example skip path request.
-	r.GET("/skip", func(c *gin.Context) {
+	r.GET("/skip", logger.SetLogger(
+		logger.WithSkipPath([]string{"/skip"}),
+	), func(c *gin.Context) {
 		c.String(http.StatusOK, "pong "+fmt.Sprint(time.Now().Unix()))
 	})
 
 	// Example skip path request.
-	r.GET("/regexp1", func(c *gin.Context) {
+	r.GET("/regexp1", logger.SetLogger(
+		logger.WithSkipPathRegexp(rxURL),
+	), func(c *gin.Context) {
 		c.String(http.StatusOK, "pong "+fmt.Sprint(time.Now().Unix()))
 	})
 
 	// Example skip path request.
-	r.GET("/regexp2", func(c *gin.Context) {
+	r.GET("/regexp2", logger.SetLogger(
+		logger.WithSkipPathRegexp(rxURL),
+	), func(c *gin.Context) {
 		c.String(http.StatusOK, "pong "+fmt.Sprint(time.Now().Unix()))
 	})
 

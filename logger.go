@@ -10,34 +10,73 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+func defaultLogger(c *gin.Context, latency time.Duration) zerolog.Logger {
+	logger := log.Logger.With().
+		Int("status", c.Writer.Status()).
+		Str("method", c.Request.Method).
+		Str("path", c.Request.URL.Path).
+		Str("ip", c.ClientIP()).
+		Dur("latency", latency).
+		Str("user_agent", c.Request.UserAgent()).
+		Logger()
+
+	return logger
+}
+
+// Option for timeout
+type Option func(*Config)
+
 // Config defines the config for logger middleware
 type Config struct {
-	Logger *zerolog.Logger
+	Logger func(*gin.Context, time.Duration) zerolog.Logger
 	// UTC a boolean stating whether to use UTC time zone or local.
 	UTC            bool
 	SkipPath       []string
 	SkipPathRegexp *regexp.Regexp
 }
 
-// SetLogger initializes the logging middleware.
-func SetLogger(config ...Config) gin.HandlerFunc {
-	var newConfig Config
-	if len(config) > 0 {
-		newConfig = config[0]
+func WithLogger(fn func(*gin.Context, time.Duration) zerolog.Logger) Option {
+	return func(c *Config) {
+		c.Logger = fn
 	}
-	var skip map[string]struct{}
-	if length := len(newConfig.SkipPath); length > 0 {
-		skip = make(map[string]struct{}, length)
-		for _, path := range newConfig.SkipPath {
-			skip[path] = struct{}{}
-		}
+}
+
+func WithSkipPathRegexp(s *regexp.Regexp) Option {
+	return func(c *Config) {
+		c.SkipPathRegexp = s
+	}
+}
+
+func WithUTC(s bool) Option {
+	return func(c *Config) {
+		c.UTC = s
+	}
+}
+
+func WithSkipPath(s []string) Option {
+	return func(c *Config) {
+		c.SkipPath = s
+	}
+}
+
+// SetLogger initializes the logging middleware.
+func SetLogger(opts ...Option) gin.HandlerFunc {
+	l := &Config{
+		Logger: defaultLogger,
 	}
 
-	var sublog zerolog.Logger
-	if newConfig.Logger == nil {
-		sublog = log.Logger
-	} else {
-		sublog = *newConfig.Logger
+	// Loop through each option
+	for _, opt := range opts {
+		// Call the option giving the instantiated
+		opt(l)
+	}
+
+	var skip map[string]struct{}
+	if length := len(l.SkipPath); length > 0 {
+		skip = make(map[string]struct{}, length)
+		for _, path := range l.SkipPath {
+			skip[path] = struct{}{}
+		}
 	}
 
 	return func(c *gin.Context) {
@@ -56,45 +95,37 @@ func SetLogger(config ...Config) gin.HandlerFunc {
 		}
 
 		if track &&
-			newConfig.SkipPathRegexp != nil &&
-			newConfig.SkipPathRegexp.MatchString(path) {
+			l.SkipPathRegexp != nil &&
+			l.SkipPathRegexp.MatchString(path) {
 			track = false
 		}
 
 		if track {
 			end := time.Now()
-			latency := end.Sub(start)
-			if newConfig.UTC {
+			if l.UTC {
 				end = end.UTC()
 			}
+			latency := end.Sub(start)
+			logger := l.Logger(c, latency)
 
 			msg := "Request"
 			if len(c.Errors) > 0 {
 				msg = c.Errors.String()
 			}
 
-			dumplogger := sublog.With().
-				Int("status", c.Writer.Status()).
-				Str("method", c.Request.Method).
-				Str("path", path).
-				Str("ip", c.ClientIP()).
-				Dur("latency", latency).
-				Str("user_agent", c.Request.UserAgent()).
-				Logger()
-
 			switch {
 			case c.Writer.Status() >= http.StatusBadRequest && c.Writer.Status() < http.StatusInternalServerError:
 				{
-					dumplogger.Warn().
+					logger.Warn().
 						Msg(msg)
 				}
 			case c.Writer.Status() >= http.StatusInternalServerError:
 				{
-					dumplogger.Error().
+					logger.Error().
 						Msg(msg)
 				}
 			default:
-				dumplogger.Info().
+				logger.Info().
 					Msg(msg)
 			}
 		}
