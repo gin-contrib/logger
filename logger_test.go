@@ -27,6 +27,7 @@ func performRequest(r http.Handler, method, path string, headers ...header) *htt
 
 func TestLogger(t *testing.T) {
 	buffer := new(bytes.Buffer)
+	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()
 	r.Use(SetLogger(WithWriter(buffer)))
 	r.GET("/example", func(c *gin.Context) {})
