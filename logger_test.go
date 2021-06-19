@@ -72,6 +72,7 @@ func TestLoggerWithLogger(t *testing.T) {
 	r := gin.New()
 	r.GET("/example", SetLogger(
 		WithWriter(buffer),
+		WithUTC(true),
 		WithLogger(func(c *gin.Context, out io.Writer, latency time.Duration) zerolog.Logger {
 			return zerolog.New(out).With().
 				Str("foo", "bar").
