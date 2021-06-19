@@ -121,7 +121,7 @@ func main() {
 Run app server:
 
 ```sh
-go run example/main.go
+go run _example/main.go
 ```
 
 Test request:
