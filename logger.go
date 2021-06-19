@@ -1,17 +1,18 @@
 package logger
 
 import (
+	"io"
 	"net/http"
 	"regexp"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 )
 
-func defaultLogger(c *gin.Context, latency time.Duration) zerolog.Logger {
-	logger := log.Logger.With().
+func defaultLogger(c *gin.Context, out io.Writer, latency time.Duration) zerolog.Logger {
+	logger := zerolog.New(out).With().
+		Timestamp().
 		Int("status", c.Writer.Status()).
 		Str("method", c.Request.Method).
 		Str("path", c.Request.URL.Path).
@@ -24,49 +25,60 @@ func defaultLogger(c *gin.Context, latency time.Duration) zerolog.Logger {
 }
 
 // Option for timeout
-type Option func(*Config)
+type Option func(*config)
 
 // Config defines the config for logger middleware
-type Config struct {
-	Logger func(*gin.Context, time.Duration) zerolog.Logger
+type config struct {
+	logger func(*gin.Context, io.Writer, time.Duration) zerolog.Logger
 	// UTC a boolean stating whether to use UTC time zone or local.
-	UTC            bool
-	SkipPath       []string
-	SkipPathRegexp *regexp.Regexp
+	utc            bool
+	skipPath       []string
+	skipPathRegexp *regexp.Regexp
+	// Output is a writer where logs are written.
+	// Optional. Default value is gin.DefaultWriter.
+	output io.Writer
 }
 
 // WithLogger set custom logger func
-func WithLogger(fn func(*gin.Context, time.Duration) zerolog.Logger) Option {
-	return func(c *Config) {
-		c.Logger = fn
+func WithLogger(fn func(*gin.Context, io.Writer, time.Duration) zerolog.Logger) Option {
+	return func(c *config) {
+		c.logger = fn
 	}
 }
 
 // WithSkipPathRegexp skip URL path by regexp pattern
 func WithSkipPathRegexp(s *regexp.Regexp) Option {
-	return func(c *Config) {
-		c.SkipPathRegexp = s
+	return func(c *config) {
+		c.skipPathRegexp = s
 	}
 }
 
 // WithUTC returns t with the location set to UTC.
 func WithUTC(s bool) Option {
-	return func(c *Config) {
-		c.UTC = s
+	return func(c *config) {
+		c.utc = s
 	}
 }
 
 // WithSkipPath skip URL path by specfic pattern
 func WithSkipPath(s []string) Option {
-	return func(c *Config) {
-		c.SkipPath = s
+	return func(c *config) {
+		c.skipPath = s
+	}
+}
+
+// WithSkipPath skip URL path by specfic pattern
+func WithWriter(s io.Writer) Option {
+	return func(c *config) {
+		c.output = s
 	}
 }
 
 // SetLogger initializes the logging middleware.
 func SetLogger(opts ...Option) gin.HandlerFunc {
-	l := &Config{
-		Logger: defaultLogger,
+	l := &config{
+		logger: defaultLogger,
+		output: gin.DefaultWriter,
 	}
 
 	// Loop through each option
@@ -76,9 +88,9 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 	}
 
 	var skip map[string]struct{}
-	if length := len(l.SkipPath); length > 0 {
+	if length := len(l.skipPath); length > 0 {
 		skip = make(map[string]struct{}, length)
-		for _, path := range l.SkipPath {
+		for _, path := range l.skipPath {
 			skip[path] = struct{}{}
 		}
 	}
@@ -99,18 +111,18 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 		}
 
 		if track &&
-			l.SkipPathRegexp != nil &&
-			l.SkipPathRegexp.MatchString(path) {
+			l.skipPathRegexp != nil &&
+			l.skipPathRegexp.MatchString(path) {
 			track = false
 		}
 
 		if track {
 			end := time.Now()
-			if l.UTC {
+			if l.utc {
 				end = end.UTC()
 			}
 			latency := end.Sub(start)
-			logger := l.Logger(c, latency)
+			logger := l.logger(c, l.output, latency)
 
 			msg := "Request"
 			if len(c.Errors) > 0 {
