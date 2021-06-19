@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"regexp"
@@ -45,8 +46,8 @@ func main() {
 		logger.WithSkipPath([]string{"/skip"}),
 		logger.WithUTC(true),
 		logger.WithSkipPathRegexp(rxURL),
-		logger.WithLogger(func(c *gin.Context, latency time.Duration) zerolog.Logger {
-			return zerolog.New(os.Stdout).With().
+		logger.WithLogger(func(c *gin.Context, out io.Writer, latency time.Duration) zerolog.Logger {
+			return zerolog.New(out).With().
 				Str("foo", "bar").
 				Str("path", c.Request.URL.Path).
 				Dur("latency", latency).
