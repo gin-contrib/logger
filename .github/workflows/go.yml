@@ -32,7 +32,7 @@ jobs:
           ref: ${{ github.ref }}
 
       - name: golangci-lint
-        uses: reviewdog/action-golangci-lint@v1
+        uses: golangci/golangci-lint-action@v2
 
       - name: Run Tests
         run: |
