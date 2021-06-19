@@ -1,6 +1,6 @@
 # logger
 
-[![Build Status](https://travis-ci.org/gin-contrib/logger.svg?branch=master)](https://travis-ci.org/gin-contrib/logger)
+[![Run Tests](https://github.com/gin-contrib/logger/actions/workflows/go.yml/badge.svg?branch=master)](https://github.com/gin-contrib/logger/actions/workflows/go.yml)
 [![codecov](https://codecov.io/gh/gin-contrib/logger/branch/master/graph/badge.svg)](https://codecov.io/gh/gin-contrib/logger)
 [![Go Report Card](https://goreportcard.com/badge/github.com/gin-contrib/logger)](https://goreportcard.com/report/github.com/gin-contrib/logger)
 [![GoDoc](https://godoc.org/github.com/gin-contrib/logger?status.svg)](https://godoc.org/github.com/gin-contrib/logger)
