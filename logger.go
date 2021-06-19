@@ -35,24 +35,28 @@ type Config struct {
 	SkipPathRegexp *regexp.Regexp
 }
 
+// WithLogger set custom logger func
 func WithLogger(fn func(*gin.Context, time.Duration) zerolog.Logger) Option {
 	return func(c *Config) {
 		c.Logger = fn
 	}
 }
 
+// WithSkipPathRegexp skip URL path by regexp pattern
 func WithSkipPathRegexp(s *regexp.Regexp) Option {
 	return func(c *Config) {
 		c.SkipPathRegexp = s
 	}
 }
 
+// WithUTC returns t with the location set to UTC.
 func WithUTC(s bool) Option {
 	return func(c *Config) {
 		c.UTC = s
 	}
 }
 
+// WithSkipPath skip URL path by specfic pattern
 func WithSkipPath(s []string) Option {
 	return func(c *Config) {
 		c.SkipPath = s
