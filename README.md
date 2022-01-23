@@ -131,4 +131,4 @@ curl http://localhost:8080/ping
 curl http://localhost:8080/pong
 ```
 
-![screenshot](./images/screen.png)
+![screenshot](./images/screenshot.png)

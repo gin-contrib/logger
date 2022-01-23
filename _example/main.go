@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"regexp"
 	"time"
 
@@ -18,18 +17,6 @@ import (
 var rxURL = regexp.MustCompile(`^/regexp\d*`)
 
 func main() {
-	zerolog.SetGlobalLevel(zerolog.InfoLevel)
-	if gin.IsDebugging() {
-		zerolog.SetGlobalLevel(zerolog.DebugLevel)
-	}
-
-	log.Logger = log.Output(
-		zerolog.ConsoleWriter{
-			Out:     os.Stderr,
-			NoColor: false,
-		},
-	)
-
 	r := gin.New()
 
 	// Add a logger middleware, which:
@@ -47,13 +34,6 @@ func main() {
 		logger.WithSkipPath([]string{"/skip"}),
 		logger.WithUTC(true),
 		logger.WithSkipPathRegexp(rxURL),
-		logger.WithLogger(func(c *gin.Context, out io.Writer, latency time.Duration) zerolog.Logger {
-			return zerolog.New(out).With().
-				Str("foo", "bar").
-				Str("path", c.Request.URL.Path).
-				Dur("latency", latency).
-				Logger()
-		}),
 	), func(c *gin.Context) {
 		c.String(http.StatusOK, "pong "+fmt.Sprint(time.Now().Unix()))
 	})

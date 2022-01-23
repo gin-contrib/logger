@@ -2,8 +2,8 @@ github.com/coreos/go-systemd/v22 v22.3.2/go.mod h1:Y58oyj3AT4RCenI/lSvhwexgC+NSV
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/gin-contrib/logger v0.2.0 h1:YkdOGKdm/Nnrrd3bjBjcjd3ow1kR2KUfxxP4/rlL23E=
-github.com/gin-contrib/logger v0.2.0/go.mod h1:dYxbt3GB+rvPyJSvox5lLsnKYwh8PjWrC9TQtR+hpUw=
+github.com/gin-contrib/logger v0.2.1 h1:Wu9JyQRuv4a7ZgqNlcbTC+RpElIwAueyv/wrFUIm6pE=
+github.com/gin-contrib/logger v0.2.1/go.mod h1:6uKBteCGZF6VtxSfO1MKWl7aEu1sPSOhwCEAFPFxnnI=
 github.com/gin-contrib/requestid v0.0.1 h1:pX7Mq3+SJM29OI6WmhDDCkoIj8CFlDdcMmDuz1D7amA=
 github.com/gin-contrib/requestid v0.0.1/go.mod h1:qHYO+O8Oo6+l3hZHL4zXyZKDaVHbAN4XdRint4Ex4+U=
 github.com/gin-contrib/sse v0.1.0 h1:Y/yl/+YNO8GZSjAhjMsSuLt29uWRFHdHYUb5lYOV9qE=
