@@ -3,15 +3,25 @@ package logger
 import (
 	"io"
 	"net/http"
+	"os"
 	"regexp"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/mattn/go-isatty"
 	"github.com/rs/zerolog"
 )
 
 func defaultLogger(c *gin.Context, out io.Writer, latency time.Duration) zerolog.Logger {
-	logger := zerolog.New(out).With().
+	isTerm := isatty.IsTerminal(os.Stdout.Fd())
+	logger := zerolog.New(out).
+		Output(
+			zerolog.ConsoleWriter{
+				Out:     out,
+				NoColor: !isTerm,
+			},
+		).
+		With().
 		Timestamp().
 		Int("status", c.Writer.Status()).
 		Str("method", c.Request.Method).

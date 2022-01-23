@@ -56,14 +56,14 @@ func TestLogger(t *testing.T) {
 	assert.Contains(t, buffer.String(), "400")
 	assert.Contains(t, buffer.String(), "POST")
 	assert.Contains(t, buffer.String(), "/example")
-	assert.Contains(t, buffer.String(), "warn")
+	assert.Contains(t, buffer.String(), "WRN")
 
 	buffer.Reset()
 	performRequest(r, "PUT", "/example?a=100")
 	assert.Contains(t, buffer.String(), "502")
 	assert.Contains(t, buffer.String(), "PUT")
 	assert.Contains(t, buffer.String(), "/example")
-	assert.Contains(t, buffer.String(), "error")
+	assert.Contains(t, buffer.String(), "ERR")
 }
 
 func TestLoggerWithLogger(t *testing.T) {
