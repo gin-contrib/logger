@@ -118,3 +118,33 @@ func TestLoggerWithLogger(t *testing.T) {
 	performRequest(r, "GET", "/regexp02")
 	assert.NotContains(t, buffer.String(), "/regexp02")
 }
+
+func TestLoggerWithLevels(t *testing.T) {
+	buffer := new(bytes.Buffer)
+	gin.SetMode(gin.ReleaseMode)
+	r := gin.New()
+	r.Use(SetLogger(
+		WithWriter(buffer),
+		WithDefaultLevel(zerolog.DebugLevel),
+		WithClientErrorLevel(zerolog.ErrorLevel),
+		WithServerErrorLevel(zerolog.FatalLevel),
+	))
+	r.GET("/example", func(c *gin.Context) {})
+	r.POST("/example", func(c *gin.Context) {
+		c.String(http.StatusBadRequest, "ok")
+	})
+	r.PUT("/example", func(c *gin.Context) {
+		c.String(http.StatusBadGateway, "ok")
+	})
+
+	performRequest(r, "GET", "/example?a=100")
+	assert.Contains(t, buffer.String(), "DBG")
+
+	buffer.Reset()
+	performRequest(r, "POST", "/example?a=100")
+	assert.Contains(t, buffer.String(), "ERR")
+
+	buffer.Reset()
+	performRequest(r, "PUT", "/example?a=100")
+	assert.Contains(t, buffer.String(), "FTL")
+}
