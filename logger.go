@@ -47,6 +47,12 @@ type config struct {
 	// Output is a writer where logs are written.
 	// Optional. Default value is gin.DefaultWriter.
 	output io.Writer
+	// the log level used for request with status code < 400
+	defaultLevel zerolog.Level
+	// the log level used for request with status code between 400 and 499
+	clientErrorLevel zerolog.Level
+	// the log level used for request with status code >= 500
+	serverErrorLevel zerolog.Level
 }
 
 // WithLogger set custom logger func
@@ -85,11 +91,32 @@ func WithWriter(s io.Writer) Option {
 	}
 }
 
+func WithDefaultLevel(lvl zerolog.Level) Option {
+	return func(c *config) {
+		c.defaultLevel = lvl
+	}
+}
+
+func WithClientErrorLevel(lvl zerolog.Level) Option {
+	return func(c *config) {
+		c.clientErrorLevel = lvl
+	}
+}
+
+func WithServerErrorLevel(lvl zerolog.Level) Option {
+	return func(c *config) {
+		c.serverErrorLevel = lvl
+	}
+}
+
 // SetLogger initializes the logging middleware.
 func SetLogger(opts ...Option) gin.HandlerFunc {
 	l := &config{
-		logger: defaultLogger,
-		output: gin.DefaultWriter,
+		logger:           defaultLogger,
+		defaultLevel:     zerolog.InfoLevel,
+		clientErrorLevel: zerolog.WarnLevel,
+		serverErrorLevel: zerolog.ErrorLevel,
+		output:           gin.DefaultWriter,
 	}
 
 	// Loop through each option
@@ -143,16 +170,16 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 			switch {
 			case c.Writer.Status() >= http.StatusBadRequest && c.Writer.Status() < http.StatusInternalServerError:
 				{
-					logger.Warn().
+					logger.WithLevel(l.clientErrorLevel).
 						Msg(msg)
 				}
 			case c.Writer.Status() >= http.StatusInternalServerError:
 				{
-					logger.Error().
+					logger.WithLevel(l.serverErrorLevel).
 						Msg(msg)
 				}
 			default:
-				logger.Info().
+				logger.WithLevel(l.defaultLevel).
 					Msg(msg)
 			}
 		}

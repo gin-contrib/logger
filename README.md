@@ -92,6 +92,13 @@ func main() {
     c.String(http.StatusOK, "pong "+fmt.Sprint(time.Now().Unix()))
   })
 
+  // Example custom log level.
+  r.GET("/debugonly", logger.SetLogger(
+    logger.WithDefaultLevel(zerolog.DebugLevel),
+  ), func(c *gin.Context) {
+    c.String(http.StatusOK, "pong "+fmt.Sprint(time.Now().Unix()))
+  })
+
   r.GET("/id", requestid.New(requestid.Config{
     Generator: func() string {
       return "foo-bar"
