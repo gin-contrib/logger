@@ -34,9 +34,6 @@ func defaultLogger(c *gin.Context, out io.Writer, latency time.Duration) zerolog
 	return logger
 }
 
-// Option for timeout
-type Option func(*config)
-
 // Config defines the config for logger middleware
 type config struct {
 	logger func(*gin.Context, io.Writer, time.Duration) zerolog.Logger
@@ -55,60 +52,6 @@ type config struct {
 	serverErrorLevel zerolog.Level
 }
 
-// WithLogger set custom logger func
-func WithLogger(fn func(*gin.Context, io.Writer, time.Duration) zerolog.Logger) Option {
-	return func(c *config) {
-		c.logger = fn
-	}
-}
-
-// WithSkipPathRegexp skip URL path by regexp pattern
-func WithSkipPathRegexp(s *regexp.Regexp) Option {
-	return func(c *config) {
-		c.skipPathRegexp = s
-	}
-}
-
-// WithUTC returns t with the location set to UTC.
-func WithUTC(s bool) Option {
-	return func(c *config) {
-		c.utc = s
-	}
-}
-
-// WithSkipPath skip URL path by specfic pattern
-func WithSkipPath(s []string) Option {
-	return func(c *config) {
-		c.skipPath = s
-	}
-}
-
-// WithWriter change the default output writer.
-// Default is gin.DefaultWriter
-func WithWriter(s io.Writer) Option {
-	return func(c *config) {
-		c.output = s
-	}
-}
-
-func WithDefaultLevel(lvl zerolog.Level) Option {
-	return func(c *config) {
-		c.defaultLevel = lvl
-	}
-}
-
-func WithClientErrorLevel(lvl zerolog.Level) Option {
-	return func(c *config) {
-		c.clientErrorLevel = lvl
-	}
-}
-
-func WithServerErrorLevel(lvl zerolog.Level) Option {
-	return func(c *config) {
-		c.serverErrorLevel = lvl
-	}
-}
-
 // SetLogger initializes the logging middleware.
 func SetLogger(opts ...Option) gin.HandlerFunc {
 	l := &config{
@@ -120,9 +63,9 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 	}
 
 	// Loop through each option
-	for _, opt := range opts {
+	for _, o := range opts {
 		// Call the option giving the instantiated
-		opt(l)
+		o.apply(l)
 	}
 
 	var skip map[string]struct{}
