@@ -7,4 +7,5 @@ require (
 	github.com/mattn/go-isatty v0.0.14
 	github.com/rs/zerolog v1.27.0
 	github.com/stretchr/testify v1.8.0
+	go.opentelemetry.io/otel/trace v1.10.0
 )

@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/mattn/go-isatty"
 	"github.com/rs/zerolog"
+	"go.opentelemetry.io/otel/trace"
 )
 
 func defaultLogger(c *gin.Context, out io.Writer, latency time.Duration) zerolog.Logger {
@@ -50,6 +51,8 @@ type config struct {
 	clientErrorLevel zerolog.Level
 	// the log level used for request with status code >= 500
 	serverErrorLevel zerolog.Level
+
+	traceID bool // optionally log Open Telemetry TraceID
 }
 
 // SetLogger initializes the logging middleware.
@@ -104,6 +107,11 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 			}
 			latency := end.Sub(start)
 			logger := l.logger(c, l.output, latency)
+			if l.traceID {
+				logger = logger.With().
+					Str("traceID", trace.SpanFromContext(c.Request.Context()).SpanContext().TraceID().String()).
+					Logger()
+			}
 
 			msg := "Request"
 			if len(c.Errors) > 0 {
