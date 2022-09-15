@@ -15,9 +15,7 @@ package main
 
 import (
   "fmt"
-  "io"
   "net/http"
-  "os"
   "regexp"
   "time"
 
@@ -31,18 +29,6 @@ import (
 var rxURL = regexp.MustCompile(`^/regexp\d*`)
 
 func main() {
-  zerolog.SetGlobalLevel(zerolog.InfoLevel)
-  if gin.IsDebugging() {
-    zerolog.SetGlobalLevel(zerolog.DebugLevel)
-  }
-
-  log.Logger = log.Output(
-    zerolog.ConsoleWriter{
-      Out:     os.Stderr,
-      NoColor: false,
-    },
-  )
-
   r := gin.New()
 
   // Add a logger middleware, which:
@@ -60,13 +46,6 @@ func main() {
     logger.WithSkipPath([]string{"/skip"}),
     logger.WithUTC(true),
     logger.WithSkipPathRegexp(rxURL),
-    logger.WithLogger(func(c *gin.Context, out io.Writer, latency time.Duration) zerolog.Logger {
-      return zerolog.New(out).With().
-        Str("foo", "bar").
-        Str("path", c.Request.URL.Path).
-        Dur("latency", latency).
-        Logger()
-    }),
   ), func(c *gin.Context) {
     c.String(http.StatusOK, "pong "+fmt.Sprint(time.Now().Unix()))
   })
@@ -92,24 +71,14 @@ func main() {
     c.String(http.StatusOK, "pong "+fmt.Sprint(time.Now().Unix()))
   })
 
-  // Example custom log level.
-  r.GET("/debugonly", logger.SetLogger(
-    logger.WithDefaultLevel(zerolog.DebugLevel),
-  ), func(c *gin.Context) {
-    c.String(http.StatusOK, "pong "+fmt.Sprint(time.Now().Unix()))
-  })
-
-  r.GET("/id", requestid.New(requestid.Config{
-    Generator: func() string {
-      return "foo-bar"
-    },
-  }), logger.SetLogger(
-    logger.WithLogger(func(c *gin.Context, out io.Writer, latency time.Duration) zerolog.Logger {
-      return zerolog.New(out).With().
+  r.GET("/id", requestid.New(requestid.WithGenerator(func() string {
+    return "foobar"
+  })), logger.SetLogger(
+    logger.WithLogger(func(c *gin.Context, l zerolog.Logger) zerolog.Logger {
+      return l.With().
         Str("id", requestid.Get(c)).
         Str("foo", "bar").
         Str("path", c.Request.URL.Path).
-        Dur("latency", latency).
         Logger()
     }),
   ), func(c *gin.Context) {
