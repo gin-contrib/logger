@@ -51,8 +51,8 @@ type config struct {
 	clientErrorLevel zerolog.Level
 	// the log level used for request with status code >= 500
 	serverErrorLevel zerolog.Level
-
-	traceID bool // optionally log Open Telemetry TraceID
+	// optionally log Open Telemetry TraceID
+	traceID bool
 }
 
 // SetLogger initializes the logging middleware.
