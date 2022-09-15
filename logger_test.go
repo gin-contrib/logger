@@ -2,12 +2,10 @@ package logger
 
 import (
 	"bytes"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"regexp"
 	"testing"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog"
@@ -73,13 +71,12 @@ func TestLoggerWithLogger(t *testing.T) {
 	r.GET("/example", SetLogger(
 		WithWriter(buffer),
 		WithUTC(true),
-		WithLogger(func(c *gin.Context, out io.Writer, latency time.Duration) zerolog.Logger {
-			return zerolog.New(out).With().
+		WithLogger(Fn(func(c *gin.Context, l zerolog.Logger) zerolog.Logger {
+			return l.With().
 				Str("foo", "bar").
 				Str("path", c.Request.URL.Path).
-				Dur("latency", latency).
 				Logger()
-		}),
+		})),
 	), func(c *gin.Context) {})
 
 	r.GET("/example2", SetLogger(

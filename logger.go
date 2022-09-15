@@ -13,31 +13,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-func defaultLogger(c *gin.Context, out io.Writer, latency time.Duration) zerolog.Logger {
-	isTerm := isatty.IsTerminal(os.Stdout.Fd())
-	logger := zerolog.New(out).
-		Output(
-			zerolog.ConsoleWriter{
-				Out:     out,
-				NoColor: !isTerm,
-			},
-		).
-		With().
-		Timestamp().
-		Int("status", c.Writer.Status()).
-		Str("method", c.Request.Method).
-		Str("path", c.Request.URL.Path).
-		Str("ip", c.ClientIP()).
-		Dur("latency", latency).
-		Str("user_agent", c.Request.UserAgent()).
-		Logger()
-
-	return logger
-}
+type Fn func(*gin.Context, zerolog.Logger) zerolog.Logger
 
 // Config defines the config for logger middleware
 type config struct {
-	logger func(*gin.Context, io.Writer, time.Duration) zerolog.Logger
+	logger Fn
 	// UTC a boolean stating whether to use UTC time zone or local.
 	utc            bool
 	skipPath       []string
@@ -57,8 +37,7 @@ type config struct {
 
 // SetLogger initializes the logging middleware.
 func SetLogger(opts ...Option) gin.HandlerFunc {
-	l := &config{
-		logger:           defaultLogger,
+	cfg := &config{
 		defaultLevel:     zerolog.InfoLevel,
 		clientErrorLevel: zerolog.WarnLevel,
 		serverErrorLevel: zerolog.ErrorLevel,
@@ -68,18 +47,34 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 	// Loop through each option
 	for _, o := range opts {
 		// Call the option giving the instantiated
-		o.apply(l)
+		o.apply(cfg)
 	}
 
 	var skip map[string]struct{}
-	if length := len(l.skipPath); length > 0 {
+	if length := len(cfg.skipPath); length > 0 {
 		skip = make(map[string]struct{}, length)
-		for _, path := range l.skipPath {
+		for _, path := range cfg.skipPath {
 			skip[path] = struct{}{}
 		}
 	}
 
 	return func(c *gin.Context) {
+		isTerm := isatty.IsTerminal(os.Stdout.Fd())
+		l := zerolog.New(cfg.output).
+			Output(
+				zerolog.ConsoleWriter{
+					Out:     cfg.output,
+					NoColor: !isTerm,
+				},
+			).
+			With().
+			Timestamp().
+			Logger()
+
+		if cfg.logger != nil {
+			l = cfg.logger(c, l)
+		}
+
 		start := time.Now()
 		path := c.Request.URL.Path
 		raw := c.Request.URL.RawQuery
@@ -95,20 +90,28 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 		}
 
 		if track &&
-			l.skipPathRegexp != nil &&
-			l.skipPathRegexp.MatchString(path) {
+			cfg.skipPathRegexp != nil &&
+			cfg.skipPathRegexp.MatchString(path) {
 			track = false
 		}
 
 		if track {
 			end := time.Now()
-			if l.utc {
+			if cfg.utc {
 				end = end.UTC()
 			}
 			latency := end.Sub(start)
-			logger := l.logger(c, l.output, latency)
-			if l.traceID {
-				logger = logger.With().
+
+			l = l.With().
+				Int("status", c.Writer.Status()).
+				Str("method", c.Request.Method).
+				Str("path", c.Request.URL.Path).
+				Str("ip", c.ClientIP()).
+				Dur("latency", latency).
+				Str("user_agent", c.Request.UserAgent()).Logger()
+
+			if cfg.traceID {
+				l = l.With().
 					Str("traceID", trace.SpanFromContext(c.Request.Context()).SpanContext().TraceID().String()).
 					Logger()
 			}
@@ -121,16 +124,16 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 			switch {
 			case c.Writer.Status() >= http.StatusBadRequest && c.Writer.Status() < http.StatusInternalServerError:
 				{
-					logger.WithLevel(l.clientErrorLevel).
+					l.WithLevel(cfg.clientErrorLevel).
 						Msg(msg)
 				}
 			case c.Writer.Status() >= http.StatusInternalServerError:
 				{
-					logger.WithLevel(l.serverErrorLevel).
+					l.WithLevel(cfg.serverErrorLevel).
 						Msg(msg)
 				}
 			default:
-				logger.WithLevel(l.defaultLevel).
+				l.WithLevel(cfg.defaultLevel).
 					Msg(msg)
 			}
 		}

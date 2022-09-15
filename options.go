@@ -3,7 +3,6 @@ package logger
 import (
 	"io"
 	"regexp"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog"
@@ -23,7 +22,7 @@ func (o optionFunc) apply(c *config) {
 }
 
 // WithLogger set custom logger func
-func WithLogger(fn func(*gin.Context, io.Writer, time.Duration) zerolog.Logger) Option {
+func WithLogger(fn func(*gin.Context, zerolog.Logger) zerolog.Logger) Option {
 	return optionFunc(func(c *config) {
 		c.logger = fn
 	})
