@@ -3,8 +3,8 @@ github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ3
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/gin-contrib/logger v0.2.4-0.20220915085737-515b10115998 h1:QST3tc01dNmCRPKzL6ByzivKOAGsmhb9bA4WGq/gNQw=
-github.com/gin-contrib/logger v0.2.4-0.20220915085737-515b10115998/go.mod h1:BNondGgyePYaUoJaRizkWHJJkAkTmWIjjtvi1EuWIas=
+github.com/gin-contrib/logger v0.2.5 h1:nl6dfoCafxNmXkY3JGZvr1+ky+W8mlVz4YRkyh2Mkg0=
+github.com/gin-contrib/logger v0.2.5/go.mod h1:GozUC4j0E1cF+jTjouvD3tHmYmxyg1Wz6LqKYR+D1aM=
 github.com/gin-contrib/requestid v0.0.5 h1:FUlpVNV4t4cjLIo7eymDCmcrOZFUKw8MYR/OPY+yjMs=
 github.com/gin-contrib/requestid v0.0.5/go.mod h1:XPQVdKpTWib9e2zNdde+KcPYvvlLR81YCqFdiZTwAIM=
 github.com/gin-contrib/sse v0.1.0 h1:Y/yl/+YNO8GZSjAhjMsSuLt29uWRFHdHYUb5lYOV9qE=
