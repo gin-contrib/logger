@@ -74,9 +74,3 @@ func WithServerErrorLevel(lvl zerolog.Level) Option {
 		c.serverErrorLevel = lvl
 	})
 }
-
-func WithAddTraceID(v bool) Option {
-	return optionFunc(func(c *config) {
-		c.traceID = v
-	})
-}

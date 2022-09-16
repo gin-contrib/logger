@@ -71,6 +71,7 @@ func main() {
     c.String(http.StatusOK, "pong "+fmt.Sprint(time.Now().Unix()))
   })
 
+  // add custom fields.
   r.GET("/id", requestid.New(requestid.WithGenerator(func() string {
     return "foobar"
   })), logger.SetLogger(
@@ -79,6 +80,7 @@ func main() {
         Str("id", requestid.Get(c)).
         Str("foo", "bar").
         Str("path", c.Request.URL.Path).
+        Str("traceID", trace.SpanFromContext(c.Request.Context()).SpanContext().TraceID().String()).
         Logger()
     }),
   ), func(c *gin.Context) {
