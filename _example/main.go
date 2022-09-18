@@ -64,11 +64,17 @@ func main() {
 		return "foobar"
 	})), logger.SetLogger(
 		logger.WithLogger(func(c *gin.Context, l zerolog.Logger) zerolog.Logger {
+			if trace.SpanFromContext(c.Request.Context()).SpanContext().IsValid() {
+				l = l.With().
+					Str("trace_id", trace.SpanFromContext(c.Request.Context()).SpanContext().TraceID().String()).
+					Str("span_id", trace.SpanFromContext(c.Request.Context()).SpanContext().SpanID().String()).
+					Logger()
+			}
+
 			return l.With().
 				Str("id", requestid.Get(c)).
 				Str("foo", "bar").
 				Str("path", c.Request.URL.Path).
-				Str("traceID", trace.SpanFromContext(c.Request.Context()).SpanContext().TraceID().String()).
 				Logger()
 		}),
 	), func(c *gin.Context) {
