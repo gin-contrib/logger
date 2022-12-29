@@ -93,6 +93,15 @@ func main() {
     c.String(http.StatusOK, "pong "+fmt.Sprint(time.Now().Unix()))
   })
 
+  // Example of JSON format log
+  r.GET("/json", logger.SetLogger(
+    logger.WithLogger(func(_ *gin.Context, l zerolog.Logger) zerolog.Logger {
+      return l.Output(gin.DefaultWriter).With().Logger()
+    }),
+  ), func(c *gin.Context) {
+    c.String(http.StatusOK, "pong "+fmt.Sprint(time.Now().Unix()))
+  })
+
   // Listen and Server in 0.0.0.0:8080
   if err := r.Run(":8080"); err != nil {
     log.Fatal().Msg("can' start server with 8080 port")
