@@ -122,6 +122,7 @@ Test request:
 ```sh
 curl http://localhost:8080/ping
 curl http://localhost:8080/pong
+curl http://localhost:8080/json
 ```
 
 ![screenshot](./images/screenshot.png)
