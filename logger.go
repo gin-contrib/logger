@@ -130,3 +130,9 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 		}
 	}
 }
+
+// ParseLevel converts a level string into a zerolog Level value.
+// returns an error if the input string does not match known values.
+func ParseLevel(levelStr string) (zerolog.Level, error) {
+	return zerolog.ParseLevel(levelStr)
+}

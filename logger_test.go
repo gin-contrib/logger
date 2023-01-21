@@ -145,3 +145,40 @@ func TestLoggerWithLevels(t *testing.T) {
 	performRequest(r, "PUT", "/example?a=100")
 	assert.Contains(t, buffer.String(), "FTL")
 }
+
+func TestLoggerParseLevel(t *testing.T) {
+	type args struct {
+		levelStr string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    zerolog.Level
+		wantErr bool
+	}{
+		{"trace", args{"trace"}, zerolog.TraceLevel, false},
+		{"debug", args{"debug"}, zerolog.DebugLevel, false},
+		{"info", args{"info"}, zerolog.InfoLevel, false},
+		{"warn", args{"warn"}, zerolog.WarnLevel, false},
+		{"error", args{"error"}, zerolog.ErrorLevel, false},
+		{"fatal", args{"fatal"}, zerolog.FatalLevel, false},
+		{"panic", args{"panic"}, zerolog.PanicLevel, false},
+		{"disabled", args{"disabled"}, zerolog.Disabled, false},
+		{"nolevel", args{""}, zerolog.NoLevel, false},
+		{"-1", args{"-1"}, zerolog.TraceLevel, false},
+		{"-2", args{"-2"}, zerolog.Level(-2), false},
+		{"-3", args{"-3"}, zerolog.Level(-3), false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ParseLevel(tt.args.levelStr)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ParseLevel() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("ParseLevel() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
