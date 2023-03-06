@@ -10,7 +10,7 @@ require (
 	github.com/mattn/go-isatty v0.0.17
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/rs/zerolog v1.29.0
-	github.com/stretchr/testify v1.8.1
+	github.com/stretchr/testify v1.8.2
 	github.com/ugorji/go/codec v1.2.9 // indirect
 	golang.org/x/crypto v0.6.0 // indirect
 )
