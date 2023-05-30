@@ -99,6 +99,7 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 			}
 			latency := end.Sub(start)
 
+			l = *zerolog.Ctx(c.Request.Context())
 			l = l.With().
 				Int("status", c.Writer.Status()).
 				Str("method", c.Request.Method).
