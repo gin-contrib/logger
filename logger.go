@@ -32,6 +32,8 @@ type config struct {
 	serverErrorLevel zerolog.Level
 }
 
+var isTerm bool = isatty.IsTerminal(os.Stdout.Fd())
+
 // SetLogger initializes the logging middleware.
 func SetLogger(opts ...Option) gin.HandlerFunc {
 	cfg := &config{
@@ -56,7 +58,6 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 	}
 
 	return func(c *gin.Context) {
-		isTerm := isatty.IsTerminal(os.Stdout.Fd())
 		l := zerolog.New(cfg.output).
 			Output(
 				zerolog.ConsoleWriter{

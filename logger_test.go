@@ -182,3 +182,24 @@ func TestLoggerParseLevel(t *testing.T) {
 		})
 	}
 }
+
+func BenchmarkLogger(b *testing.B) {
+	gin.SetMode(gin.ReleaseMode)
+	r := gin.New()
+	r.Use(SetLogger(WithDefaultLevel(zerolog.Disabled)))
+	r.GET("/", func(ctx *gin.Context) {
+		ctx.Data(200, "text/plain", []byte("all good"))
+	})
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	b.RunParallel(func(pb *testing.PB) {
+		req, _ := http.NewRequest("GET", "/", nil)
+		w := httptest.NewRecorder()
+
+		for pb.Next() {
+			r.ServeHTTP(w, req)
+		}
+	})
+}
