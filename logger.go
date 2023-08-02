@@ -38,6 +38,10 @@ type config struct {
 	logResponseBody bool
 	// max len of response body message (whatever the status code)
 	maxResponseBodyLen int
+	// whether to log request body
+	logRequestBody bool
+	// max len of log request body
+	maxRequestBodyLen int
 }
 
 type bodyLogWriter struct {
@@ -62,6 +66,8 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 		logErrorResponseBody: false,
 		logResponseBody:      false,
 		maxResponseBodyLen:   50,
+		logRequestBody:       false,
+		maxRequestBodyLen:    50,
 	}
 
 	// Loop through each option
@@ -106,6 +112,21 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 			blw = &bodyLogWriter{body: bytes.NewBufferString(""), ResponseWriter: c.Writer}
 			c.Writer = blw
 		}
+
+		var requestBody string
+		if cfg.logRequestBody && c.Request.Body != nil {
+			body, err := io.ReadAll(c.Request.Body)
+			if err != nil {
+				body = []byte(err.Error())
+			}
+
+			requestBody = string(body)
+			if len(requestBody) > cfg.maxRequestBodyLen {
+				requestBody = requestBody[:cfg.maxRequestBodyLen] + "..."
+			}
+			c.Request.Body = io.NopCloser(bytes.NewReader(body))
+		}
+
 		c.Next()
 		track := true
 
@@ -142,6 +163,9 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 				Int("status", statusCode).
 				Str("method", c.Request.Method).
 				Str("path", c.Request.URL.Path)
+			if cfg.logRequestBody {
+				ctx = ctx.Logger().With().Str("body", requestBody)
+			}
 			if withResponse {
 				ctx = ctx.Logger().With().Str("response", response)
 			}

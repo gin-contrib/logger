@@ -94,3 +94,17 @@ func WithMaxResponseBodyLen(maxResponseBodyLen int) Option {
 		}
 	})
 }
+
+func WithLogRequestBody(logRequestBody bool) Option {
+	return optionFunc(func(c *config) {
+		c.logRequestBody = logRequestBody
+	})
+}
+
+func WithMaxRequestBodyLen(maxRequestBodyLen int) Option {
+	return optionFunc(func(c *config) {
+		if maxRequestBodyLen > 0 {
+			c.maxRequestBodyLen = maxRequestBodyLen
+		}
+	})
+}
