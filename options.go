@@ -74,3 +74,23 @@ func WithServerErrorLevel(lvl zerolog.Level) Option {
 		c.serverErrorLevel = lvl
 	})
 }
+
+func WithLogErrorResponseBody(logErrorResponseBody bool) Option {
+	return optionFunc(func(c *config) {
+		c.logErrorResponseBody = logErrorResponseBody
+	})
+}
+
+func WithLogResponseBody(logResponseBody bool) Option {
+	return optionFunc(func(c *config) {
+		c.logResponseBody = logResponseBody
+	})
+}
+
+func WithMaxResponseBodyLen(maxResponseBodyLen int) Option {
+	return optionFunc(func(c *config) {
+		if maxResponseBodyLen > 0 {
+			c.maxResponseBodyLen = maxResponseBodyLen
+		}
+	})
+}

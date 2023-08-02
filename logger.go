@@ -1,10 +1,12 @@
 package logger
 
 import (
+	"bytes"
 	"io"
 	"net/http"
 	"os"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -30,6 +32,22 @@ type config struct {
 	clientErrorLevel zerolog.Level
 	// the log level used for request with status code >= 500
 	serverErrorLevel zerolog.Level
+	// whether to log response body for request with status code >= 400
+	logErrorResponseBody bool
+	// whether to log response body for request with status code < 400
+	logResponseBody bool
+	// max len of response body message (whatever the status code)
+	maxResponseBodyLen int
+}
+
+type bodyLogWriter struct {
+	gin.ResponseWriter
+	body *bytes.Buffer
+}
+
+func (w bodyLogWriter) Write(b []byte) (int, error) {
+	w.body.Write(b)
+	return w.ResponseWriter.Write(b)
 }
 
 var isTerm bool = isatty.IsTerminal(os.Stdout.Fd())
@@ -37,10 +55,13 @@ var isTerm bool = isatty.IsTerminal(os.Stdout.Fd())
 // SetLogger initializes the logging middleware.
 func SetLogger(opts ...Option) gin.HandlerFunc {
 	cfg := &config{
-		defaultLevel:     zerolog.InfoLevel,
-		clientErrorLevel: zerolog.WarnLevel,
-		serverErrorLevel: zerolog.ErrorLevel,
-		output:           gin.DefaultWriter,
+		defaultLevel:         zerolog.InfoLevel,
+		clientErrorLevel:     zerolog.WarnLevel,
+		serverErrorLevel:     zerolog.ErrorLevel,
+		output:               gin.DefaultWriter,
+		logErrorResponseBody: false,
+		logResponseBody:      false,
+		maxResponseBodyLen:   50,
 	}
 
 	// Loop through each option
@@ -80,6 +101,11 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 			path = path + "?" + raw
 		}
 
+		var blw *bodyLogWriter
+		if cfg.logErrorResponseBody || cfg.logResponseBody {
+			blw = &bodyLogWriter{body: bytes.NewBufferString(""), ResponseWriter: c.Writer}
+			c.Writer = blw
+		}
 		c.Next()
 		track := true
 
@@ -100,10 +126,26 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 			}
 			latency := end.Sub(start)
 
-			l = l.With().
-				Int("status", c.Writer.Status()).
+			statusCode := c.Writer.Status()
+			var response string
+			withResponse := (cfg.logErrorResponseBody && statusCode >= 400) || (cfg.logResponseBody && statusCode < 400)
+			if withResponse && blw.body != nil {
+				response = blw.body.String()
+				response = strings.TrimPrefix(response, "\"")
+				response = strings.TrimSuffix(response, "\"")
+				if len(response) > cfg.maxResponseBodyLen {
+					response = response[:cfg.maxResponseBodyLen] + "..."
+				}
+			}
+
+			ctx := l.With().
+				Int("status", statusCode).
 				Str("method", c.Request.Method).
-				Str("path", c.Request.URL.Path).
+				Str("path", c.Request.URL.Path)
+			if withResponse {
+				ctx = ctx.Logger().With().Str("response", response)
+			}
+			l = ctx.Logger().With().
 				Str("ip", c.ClientIP()).
 				Dur("latency", latency).
 				Str("user_agent", c.Request.UserAgent()).Logger()
@@ -114,12 +156,12 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 			}
 
 			switch {
-			case c.Writer.Status() >= http.StatusBadRequest && c.Writer.Status() < http.StatusInternalServerError:
+			case statusCode >= http.StatusBadRequest && statusCode < http.StatusInternalServerError:
 				{
 					l.WithLevel(cfg.clientErrorLevel).
 						Msg(msg)
 				}
-			case c.Writer.Status() >= http.StatusInternalServerError:
+			case statusCode >= http.StatusInternalServerError:
 				{
 					l.WithLevel(cfg.serverErrorLevel).
 						Msg(msg)

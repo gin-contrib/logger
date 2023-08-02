@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -181,6 +182,69 @@ func TestLoggerParseLevel(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestLoggerWithErrorResponse(t *testing.T) {
+	buffer := new(bytes.Buffer)
+	gin.SetMode(gin.ReleaseMode)
+	r := gin.New()
+	r.Use(SetLogger(WithWriter(buffer), WithLogErrorResponseBody(true)))
+	r.GET("/example", func(c *gin.Context) {})
+	r.POST("/example", func(c *gin.Context) {
+		c.String(http.StatusBadRequest, "bad status")
+	})
+
+	performRequest(r, "GET", "/example?a=100")
+	assert.NotContains(t, buffer.String(), "response= ")
+
+	buffer.Reset()
+	performRequest(r, "POST", "/example?a=100")
+	assert.Contains(t, buffer.String(), "response=")
+	assert.Contains(t, buffer.String(), "\"bad status\"")
+}
+
+func TestLoggerWithResponse(t *testing.T) {
+	buffer := new(bytes.Buffer)
+	gin.SetMode(gin.ReleaseMode)
+	r := gin.New()
+	r.Use(SetLogger(WithWriter(buffer), WithLogResponseBody(true)))
+	r.GET("/example", func(c *gin.Context) {})
+	r.POST("/example", func(c *gin.Context) {
+		c.String(http.StatusOK, "example response")
+	})
+
+	performRequest(r, "GET", "/example?a=100")
+	assert.Contains(t, buffer.String(), "response=")
+
+	buffer.Reset()
+	performRequest(r, "POST", "/example?a=100")
+	assert.Contains(t, buffer.String(), "response=")
+	assert.Contains(t, buffer.String(), "\"example response\"")
+}
+
+func TestLoggerWithTruncatedResponse(t *testing.T) {
+	longMessage := strings.Repeat("X", 20)
+	truncatedMessage := strings.Repeat("X", 10) + "..."
+	buffer := new(bytes.Buffer)
+	gin.SetMode(gin.ReleaseMode)
+	r := gin.New()
+	r.Use(SetLogger(WithWriter(buffer), WithLogErrorResponseBody(true), WithLogResponseBody(true), WithMaxResponseBodyLen(10)))
+	r.GET("/example", func(c *gin.Context) {
+		c.String(http.StatusBadRequest, longMessage)
+	})
+	r.POST("/example", func(c *gin.Context) {
+		// c.String(http.StatusOK, strings.Repeat("X", 20))
+		c.String(http.StatusOK, longMessage)
+	})
+
+	performRequest(r, "GET", "/example?a=100")
+	assert.Contains(t, buffer.String(), "response=")
+	assert.Contains(t, buffer.String(), truncatedMessage)
+
+	buffer.Reset()
+	performRequest(r, "POST", "/example?a=100")
+	assert.Contains(t, buffer.String(), "response=")
+	assert.Contains(t, buffer.String(), truncatedMessage)
 }
 
 func BenchmarkLogger(b *testing.B) {
