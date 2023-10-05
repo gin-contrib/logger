@@ -57,18 +57,17 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 		}
 	}
 
+	l := zerolog.New(cfg.output).
+		Output(
+			zerolog.ConsoleWriter{
+				Out:     cfg.output,
+				NoColor: !isTerm,
+			},
+		).
+		With().
+		Timestamp().
+		Logger()
 	return func(c *gin.Context) {
-		l := zerolog.New(cfg.output).
-			Output(
-				zerolog.ConsoleWriter{
-					Out:     cfg.output,
-					NoColor: !isTerm,
-				},
-			).
-			With().
-			Timestamp().
-			Logger()
-
 		if cfg.logger != nil {
 			l = cfg.logger(c, l)
 		}
