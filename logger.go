@@ -18,9 +18,9 @@ type Fn func(*gin.Context, zerolog.Logger) zerolog.Logger
 type config struct {
 	logger Fn
 	// UTC a boolean stating whether to use UTC time zone or local.
-	utc            bool
-	skipPath       []string
-	skipPathRegexp *regexp.Regexp
+	utc             bool
+	skipPath        []string
+	skipPathRegexps []*regexp.Regexp
 	// Output is a writer where logs are written.
 	// Optional. Default value is gin.DefaultWriter.
 	output io.Writer
@@ -87,10 +87,15 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 			track = false
 		}
 
-		if track &&
-			cfg.skipPathRegexp != nil &&
-			cfg.skipPathRegexp.MatchString(path) {
-			track = false
+		if track && len(cfg.skipPathRegexps) > 0 {
+			for _, reg := range cfg.skipPathRegexps {
+				if !reg.MatchString(path) {
+					continue
+				}
+
+				track = false
+				break
+			}
 		}
 
 		if track {
