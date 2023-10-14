@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -18,7 +19,16 @@ type header struct {
 }
 
 func performRequest(r http.Handler, method, path string, headers ...header) *httptest.ResponseRecorder {
-	req := httptest.NewRequest(method, path, nil)
+	return performRequestWithBody(r, method, path, "", headers...)
+}
+
+func performRequestWithBody(r http.Handler, method, path string, body string, headers ...header) *httptest.ResponseRecorder {
+	var req *http.Request
+	if body != "" {
+		req = httptest.NewRequest(method, path, bytes.NewBuffer([]byte(body)))
+	} else {
+		req = httptest.NewRequest(method, path, nil)
+	}
 	for _, h := range headers {
 		req.Header.Add(h.Key, h.Value)
 	}
@@ -181,6 +191,113 @@ func TestLoggerParseLevel(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestLoggerWithErrorResponse(t *testing.T) {
+	buffer := new(bytes.Buffer)
+	gin.SetMode(gin.ReleaseMode)
+	r := gin.New()
+	r.Use(SetLogger(WithWriter(buffer), WithLogErrorResponseBody(true)))
+	r.GET("/example", func(c *gin.Context) {})
+	r.POST("/example", func(c *gin.Context) {
+		c.String(http.StatusBadRequest, "bad status")
+	})
+
+	performRequest(r, "GET", "/example?a=100")
+	assert.NotContains(t, buffer.String(), "response= ")
+
+	buffer.Reset()
+	performRequest(r, "POST", "/example?a=100")
+	assert.Contains(t, buffer.String(), "response=")
+	assert.Contains(t, buffer.String(), "\"bad status\"")
+}
+
+func TestLoggerWithResponse(t *testing.T) {
+	buffer := new(bytes.Buffer)
+	gin.SetMode(gin.ReleaseMode)
+	r := gin.New()
+	r.Use(SetLogger(WithWriter(buffer), WithLogResponseBody(true)))
+	r.GET("/example", func(c *gin.Context) {})
+	r.POST("/example", func(c *gin.Context) {
+		c.String(http.StatusOK, "example response")
+	})
+
+	performRequest(r, "GET", "/example?a=100")
+	assert.Contains(t, buffer.String(), "response=")
+
+	buffer.Reset()
+	performRequest(r, "POST", "/example?a=100")
+	assert.Contains(t, buffer.String(), "response=")
+	assert.Contains(t, buffer.String(), "\"example response\"")
+}
+
+func TestLoggerWithTruncatedResponse(t *testing.T) {
+	longMessage := strings.Repeat("X", 20)
+	truncatedMessage := strings.Repeat("X", 10) + "..."
+	buffer := new(bytes.Buffer)
+	gin.SetMode(gin.ReleaseMode)
+	r := gin.New()
+	r.Use(SetLogger(WithWriter(buffer), WithLogErrorResponseBody(true), WithLogResponseBody(true), WithMaxResponseBodyLen(10)))
+	r.GET("/example", func(c *gin.Context) {
+		c.String(http.StatusBadRequest, longMessage)
+	})
+	r.POST("/example", func(c *gin.Context) {
+		// c.String(http.StatusOK, strings.Repeat("X", 20))
+		c.String(http.StatusOK, longMessage)
+	})
+
+	performRequest(r, "GET", "/example?a=100")
+	assert.Contains(t, buffer.String(), "response=")
+	assert.Contains(t, buffer.String(), truncatedMessage)
+
+	buffer.Reset()
+	performRequest(r, "POST", "/example?a=100")
+	assert.Contains(t, buffer.String(), "response=")
+	assert.Contains(t, buffer.String(), truncatedMessage)
+}
+
+func TestLoggerWithRequest(t *testing.T) {
+	buffer := new(bytes.Buffer)
+	gin.SetMode(gin.ReleaseMode)
+	r := gin.New()
+	r.Use(SetLogger(WithWriter(buffer), WithLogRequestBody(true)))
+	r.GET("/example", func(c *gin.Context) {})
+	r.POST("/example", func(c *gin.Context) {
+		c.String(http.StatusOK, "example response")
+	})
+
+	performRequestWithBody(r, "GET", "/example?a=100", "GET body")
+	assert.Contains(t, buffer.String(), "body=\"GET body\"")
+
+	buffer.Reset()
+	performRequestWithBody(r, "POST", "/example?a=100", "POST body")
+	assert.Contains(t, buffer.String(), "body=\"POST body\"")
+
+	buffer.Reset()
+	longBody := strings.Repeat("X", 20)
+	performRequestWithBody(r, "POST", "/example?a=100", longBody)
+	assert.Contains(t, buffer.String(), "body="+longBody+" ")
+}
+
+func TestLoggerWithTruncatedRequest(t *testing.T) {
+	longBody := strings.Repeat("X", 20)
+	truncatedBody := strings.Repeat("X", 10) + "..."
+
+	buffer := new(bytes.Buffer)
+	gin.SetMode(gin.ReleaseMode)
+	r := gin.New()
+	r.Use(SetLogger(WithWriter(buffer), WithLogRequestBody(true), WithMaxRequestBodyLen(10)))
+	r.GET("/example", func(c *gin.Context) {})
+	r.POST("/example", func(c *gin.Context) {
+		c.String(http.StatusOK, "example response")
+	})
+
+	performRequestWithBody(r, "GET", "/example?a=100", longBody)
+	assert.Contains(t, buffer.String(), "body="+truncatedBody+"")
+
+	buffer.Reset()
+	performRequestWithBody(r, "POST", "/example?a=100", longBody)
+	assert.Contains(t, buffer.String(), "body="+truncatedBody+"")
 }
 
 func BenchmarkLogger(b *testing.B) {
