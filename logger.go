@@ -107,7 +107,7 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 			l = l.With().
 				Int("status", c.Writer.Status()).
 				Str("method", c.Request.Method).
-				Str("path", c.Request.URL.Path).
+				Str("path", path).
 				Str("ip", c.ClientIP()).
 				Dur("latency", latency).
 				Str("user_agent", c.Request.UserAgent()).Logger()
