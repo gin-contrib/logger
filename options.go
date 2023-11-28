@@ -28,27 +28,14 @@ func WithLogger(fn func(*gin.Context, zerolog.Logger) zerolog.Logger) Option {
 	})
 }
 
-// WithSkipPathRegexp skip URL path by regexp pattern
-func WithSkipPathRegexp(reg *regexp.Regexp) Option {
-	return optionFunc(func(c *config) {
-		if reg == nil {
-			return
-		}
-
-		c.skipPathRegexps = append(c.skipPathRegexps, reg)
-	})
-}
-
 // WithSkipPathRegexps multiple skip URL paths by regexp pattern
-func WithSkipPathRegexps(regs []*regexp.Regexp) Option {
+func WithSkipPathRegexps(regs ...*regexp.Regexp) Option {
 	return optionFunc(func(c *config) {
-		if regs == nil {
+		if len(regs) == 0 {
 			return
 		}
 
-		for _, reg := range regs {
-			c.skipPathRegexps = append(c.skipPathRegexps, reg)
-		}
+		c.skipPathRegexps = append(c.skipPathRegexps, regs...)
 	})
 }
 

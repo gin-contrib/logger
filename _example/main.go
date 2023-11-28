@@ -33,7 +33,7 @@ func main() {
 	r.GET("/ping", logger.SetLogger(
 		logger.WithSkipPath([]string{"/skip"}),
 		logger.WithUTC(true),
-		logger.WithSkipPathRegexp(rxURL),
+		logger.WithSkipPathRegexps(rxURL),
 	), func(c *gin.Context) {
 		c.String(http.StatusOK, "pong "+fmt.Sprint(time.Now().Unix()))
 	})

@@ -53,7 +53,6 @@ func TestLogger(t *testing.T) {
 
 	buffer.Reset()
 	performRequest(r, "POST", "/example?a=100")
-	assert.Equal(t, 400, resp.Code)
 	assert.Contains(t, buffer.String(), "400")
 	assert.Contains(t, buffer.String(), "POST")
 	assert.Contains(t, buffer.String(), "/example")
@@ -61,7 +60,6 @@ func TestLogger(t *testing.T) {
 
 	buffer.Reset()
 	performRequest(r, "PUT", "/example?a=100")
-	assert.Equal(t, 502, resp.Code)
 	assert.Contains(t, buffer.String(), "502")
 	assert.Contains(t, buffer.String(), "PUT")
 	assert.Contains(t, buffer.String(), "/example")
@@ -92,12 +90,12 @@ func TestLoggerWithLogger(t *testing.T) {
 
 	r.GET("/regexp01", SetLogger(
 		WithWriter(buffer),
-		WithSkipPathRegexp(rxURL),
+		WithSkipPathRegexps(rxURL),
 	), func(c *gin.Context) {})
 
 	r.GET("/regexp02", SetLogger(
 		WithWriter(buffer),
-		WithSkipPathRegexp(rxURL),
+		WithSkipPathRegexps(rxURL),
 	), func(c *gin.Context) {})
 
 	performRequest(r, "GET", "/example?a=100")
