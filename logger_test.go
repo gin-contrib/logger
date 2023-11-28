@@ -2,6 +2,7 @@ package logger
 
 import (
 	"bytes"
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"regexp"
@@ -44,13 +45,15 @@ func TestLogger(t *testing.T) {
 	r.HEAD("/example", func(c *gin.Context) {})
 	r.OPTIONS("/example", func(c *gin.Context) {})
 
-	performRequest(r, "GET", "/example?a=100")
+	resp := performRequest(r, "GET", "/example?a=100", header{"X-Request-Id", "123"})
+	assert.Equal(t, 200, resp.Code)
 	assert.Contains(t, buffer.String(), "200")
 	assert.Contains(t, buffer.String(), "GET")
 	assert.Contains(t, buffer.String(), "/example")
 
 	buffer.Reset()
 	performRequest(r, "POST", "/example?a=100")
+	assert.Equal(t, 400, resp.Code)
 	assert.Contains(t, buffer.String(), "400")
 	assert.Contains(t, buffer.String(), "POST")
 	assert.Contains(t, buffer.String(), "/example")
@@ -58,6 +61,7 @@ func TestLogger(t *testing.T) {
 
 	buffer.Reset()
 	performRequest(r, "PUT", "/example?a=100")
+	assert.Equal(t, 502, resp.Code)
 	assert.Contains(t, buffer.String(), "502")
 	assert.Contains(t, buffer.String(), "PUT")
 	assert.Contains(t, buffer.String(), "/example")
@@ -195,7 +199,11 @@ func BenchmarkLogger(b *testing.B) {
 	b.ResetTimer()
 
 	b.RunParallel(func(pb *testing.PB) {
-		req, _ := http.NewRequest("GET", "/", nil)
+		req, err := http.NewRequestWithContext(context.Background(), "GET", "/", nil)
+		if err != nil {
+			b.Errorf("NewRequestWithContext() error = %v", err)
+			return
+		}
 		w := httptest.NewRecorder()
 
 		for pb.Next() {

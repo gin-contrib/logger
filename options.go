@@ -42,7 +42,7 @@ func WithUTC(s bool) Option {
 	})
 }
 
-// WithSkipPath skip URL path by specfic pattern
+// WithSkipPath skip URL path by specific pattern
 func WithSkipPath(s []string) Option {
 	return optionFunc(func(c *config) {
 		c.skipPath = s
