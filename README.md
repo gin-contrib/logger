@@ -45,7 +45,7 @@ func main() {
   r.GET("/ping", logger.SetLogger(
     logger.WithSkipPath([]string{"/skip"}),
     logger.WithUTC(true),
-    logger.WithSkipPathRegexp(rxURL),
+    logger.WithSkipPathRegexps(rxURL),
   ), func(c *gin.Context) {
     c.String(http.StatusOK, "pong "+fmt.Sprint(time.Now().Unix()))
   })
@@ -59,14 +59,14 @@ func main() {
 
   // Example skip path request.
   r.GET("/regexp1", logger.SetLogger(
-    logger.WithSkipPathRegexp(rxURL),
+    logger.WithSkipPathRegexps(rxURL),
   ), func(c *gin.Context) {
     c.String(http.StatusOK, "pong "+fmt.Sprint(time.Now().Unix()))
   })
 
   // Example skip path request.
   r.GET("/regexp2", logger.SetLogger(
-    logger.WithSkipPathRegexp(rxURL),
+    logger.WithSkipPathRegexps(rxURL),
   ), func(c *gin.Context) {
     c.String(http.StatusOK, "pong "+fmt.Sprint(time.Now().Unix()))
   })
