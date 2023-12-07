@@ -3,9 +3,12 @@ package logger
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"regexp"
+	"strings"
+	"sync"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -149,6 +152,41 @@ func TestLoggerWithLevels(t *testing.T) {
 	buffer.Reset()
 	performRequest(r, "PUT", "/example?a=100")
 	assert.Contains(t, buffer.String(), "FTL")
+}
+
+func TestCustomLoggerIssue68(t *testing.T) {
+	buffer := new(bytes.Buffer)
+	gin.SetMode(gin.ReleaseMode)
+	r := gin.New()
+	l := zerolog.New(buffer)
+	r.Use(SetLogger(
+		WithLogger(func(*gin.Context, zerolog.Logger) zerolog.Logger { return l }),
+		WithDefaultLevel(zerolog.DebugLevel),
+		WithClientErrorLevel(zerolog.ErrorLevel),
+		WithServerErrorLevel(zerolog.FatalLevel),
+	))
+	r.GET("/example", func(c *gin.Context) {})
+
+	// concurrent requests should only have their info logged once
+	var wg sync.WaitGroup
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		req := fmt.Sprintf("/example?a=%d", i)
+		go func() {
+			defer wg.Done()
+			performRequest(r, "GET", req)
+		}()
+	}
+	wg.Wait()
+
+	bs := buffer.String()
+	for i := 0; i < 10; i++ {
+		// should contain each request log exactly once
+		msg := fmt.Sprintf("/example?a=%d", i)
+		if assert.Contains(t, bs, msg) {
+			assert.Equal(t, strings.Index(bs, msg), strings.LastIndex(bs, msg))
+		}
+	}
 }
 
 func TestLoggerParseLevel(t *testing.T) {

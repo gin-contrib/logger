@@ -104,34 +104,28 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 			}
 			latency := end.Sub(start)
 
-			l = l.With().
-				Int("status", c.Writer.Status()).
-				Str("method", c.Request.Method).
-				Str("path", path).
-				Str("ip", c.ClientIP()).
-				Dur("latency", latency).
-				Str("user_agent", c.Request.UserAgent()).Logger()
-
 			msg := "Request"
 			if len(c.Errors) > 0 {
 				msg = c.Errors.String()
 			}
 
+			var evt *zerolog.Event
 			switch {
 			case c.Writer.Status() >= http.StatusBadRequest && c.Writer.Status() < http.StatusInternalServerError:
-				{
-					l.WithLevel(cfg.clientErrorLevel).
-						Msg(msg)
-				}
+				evt = l.WithLevel(cfg.clientErrorLevel)
 			case c.Writer.Status() >= http.StatusInternalServerError:
-				{
-					l.WithLevel(cfg.serverErrorLevel).
-						Msg(msg)
-				}
+				evt = l.WithLevel(cfg.serverErrorLevel)
 			default:
-				l.WithLevel(cfg.defaultLevel).
-					Msg(msg)
+				evt = l.WithLevel(cfg.defaultLevel)
 			}
+			evt.
+				Int("status", c.Writer.Status()).
+				Str("method", c.Request.Method).
+				Str("path", path).
+				Str("ip", c.ClientIP()).
+				Dur("latency", latency).
+				Str("user_agent", c.Request.UserAgent()).
+				Msg(msg)
 		}
 	}
 }
