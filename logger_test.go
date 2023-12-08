@@ -154,8 +154,19 @@ func TestLoggerWithLevels(t *testing.T) {
 	assert.Contains(t, buffer.String(), "FTL")
 }
 
+type concurrentBuffer struct {
+	mu sync.Mutex
+	b  bytes.Buffer
+}
+
+func (b *concurrentBuffer) Write(p []byte) (n int, err error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.b.Write(p)
+}
+
 func TestCustomLoggerIssue68(t *testing.T) {
-	buffer := new(bytes.Buffer)
+	buffer := new(concurrentBuffer)
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()
 	l := zerolog.New(buffer)
@@ -179,7 +190,7 @@ func TestCustomLoggerIssue68(t *testing.T) {
 	}
 	wg.Wait()
 
-	bs := buffer.String()
+	bs := buffer.b.String()
 	for i := 0; i < 10; i++ {
 		// should contain each request log exactly once
 		msg := fmt.Sprintf("/example?a=%d", i)
