@@ -68,8 +68,9 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 		Timestamp().
 		Logger()
 	return func(c *gin.Context) {
+		rl := l
 		if cfg.logger != nil {
-			l = cfg.logger(c, l)
+			rl = cfg.logger(c, l)
 		}
 
 		start := time.Now()
@@ -112,11 +113,11 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 			var evt *zerolog.Event
 			switch {
 			case c.Writer.Status() >= http.StatusBadRequest && c.Writer.Status() < http.StatusInternalServerError:
-				evt = l.WithLevel(cfg.clientErrorLevel)
+				evt = rl.WithLevel(cfg.clientErrorLevel)
 			case c.Writer.Status() >= http.StatusInternalServerError:
-				evt = l.WithLevel(cfg.serverErrorLevel)
+				evt = rl.WithLevel(cfg.serverErrorLevel)
 			default:
-				evt = l.WithLevel(cfg.defaultLevel)
+				evt = rl.WithLevel(cfg.defaultLevel)
 			}
 			evt.
 				Int("status", c.Writer.Status()).
