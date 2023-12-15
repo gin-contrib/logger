@@ -53,6 +53,13 @@ func WithSkipPath(s []string) Option {
 	})
 }
 
+// WithPathLevel use logging level for successful requests to a specific path
+func WithPathLevel(m map[string]zerolog.Level) Option {
+	return optionFunc(func(c *config) {
+		c.pathLevels = m
+	})
+}
+
 // WithWriter change the default output writer.
 // Default is gin.DefaultWriter
 func WithWriter(s io.Writer) Option {

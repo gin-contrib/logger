@@ -30,6 +30,8 @@ type config struct {
 	clientErrorLevel zerolog.Level
 	// the log level used for request with status code >= 500
 	serverErrorLevel zerolog.Level
+	// the log level to use for a specific path with status code < 400
+	pathLevels map[string]zerolog.Level
 }
 
 var isTerm bool = isatty.IsTerminal(os.Stdout.Fd())
@@ -117,6 +119,8 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 				msg = c.Errors.String()
 			}
 
+			level, hasLevel := cfg.pathLevels[path]
+
 			switch {
 			case c.Writer.Status() >= http.StatusBadRequest && c.Writer.Status() < http.StatusInternalServerError:
 				{
@@ -126,6 +130,11 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 			case c.Writer.Status() >= http.StatusInternalServerError:
 				{
 					l.WithLevel(cfg.serverErrorLevel).
+						Msg(msg)
+				}
+			case hasLevel:
+				{
+					l.WithLevel(level).
 						Msg(msg)
 				}
 			default:
