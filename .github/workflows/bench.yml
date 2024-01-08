@@ -1,0 +1,72 @@
+name: Run benchmark
+
+# Cancel the workflow in progress in newer build is about to start.
+concurrency:
+    group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+    cancel-in-progress: true
+  
+on:
+    pull_request:
+
+jobs:
+    benchmark:
+        runs-on: ubuntu-latest
+        steps:
+          - name: Setup go
+            uses: actions/setup-go@v5
+            with:
+              go-version: "1.21"
+          - name: Checkout repository
+            uses: actions/checkout@v4
+
+          - name: Run benchmark on commit
+            run: go test -bench=. -benchmem -count=20 -run=^# > pr.bench
+
+          - name: Switch to master branch
+            run: git checkout master
+          - name: Run benchmark on master
+            id: benchmark-master
+            run: go test -bench=. -benchmem -count=20 -run=^# > master.bench
+
+          - name: Restore benchstat
+            id: cache-benchstat
+            uses: actions/cache@v3
+            with:
+              path: ~/go/bin/benchstat
+              key: ${{ runner.os }}-benchstat
+          - name: Install benchstat
+            if: steps.cache-benchstat.outputs.cache-hit != 'true'
+            run: go install golang.org/x/perf/cmd/benchstat@latest
+          - name: Save benchstat
+            if: steps.cache-benchstat.outputs.cache-hit != 'true'
+            uses: actions/cache/save@v3
+            with:
+              path: ~/go/bin/benchstat
+              key: ${{ steps.cache-benchstat.outputs.cache-primary-key }}
+
+          - name: Compare benchmarks
+            id: compare
+            run: |
+              echo "STAT<<EOF" >> "$GITHUB_OUTPUT"
+              benchstat pr.bench master.bench >> "$GITHUB_OUTPUT"
+              echo "EOF" >> "$GITHUB_OUTPUT"
+          - name: Comment benchmark result
+            if: ${{ !env.ACT }}
+            continue-on-error: true
+            uses: marocchino/sticky-pull-request-comment@v2
+            with:
+              GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              header: bench
+              message: |
+                ### Benchmark Result
+                <details><summary>Benchmark result compared against master branch</summary>
+      
+                ```
+                ${{ steps.compare.outputs.STAT }}
+                ```
+                </details>
+          - name: Display result on command line when using act
+            if: ${{ env.ACT }}
+            run: |
+              echo "Benchmark result compared against master branch"
+              echo "${{ steps.compare.outputs.STAT }}"
