@@ -67,6 +67,17 @@ func TestLogger(t *testing.T) {
 	assert.Contains(t, buffer.String(), "/example")
 	assert.Contains(t, buffer.String(), "ERR")
 	assert.Contains(t, buffer.String(), "path=/example?a=100")
+
+	buffer.Reset()
+	r.GET("/example-with-additional-log", func(ctx *gin.Context) {
+		l := Get(ctx)
+		l.Info().Msg("additional log")
+	})
+	performRequest(r, "GET", "/example-with-additional-log")
+	assert.Contains(t, buffer.String(), "200")
+	assert.Contains(t, buffer.String(), "GET")
+	assert.Contains(t, buffer.String(), "/example-with-additional-log")
+	assert.Contains(t, buffer.String(), "additional log")
 }
 
 func TestLoggerWithLogger(t *testing.T) {
