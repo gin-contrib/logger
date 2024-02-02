@@ -188,6 +188,44 @@ func TestLoggerParseLevel(t *testing.T) {
 	}
 }
 
+func TestLoggerCustomLevel(t *testing.T) {
+	buffer := new(bytes.Buffer)
+	gin.SetMode(gin.ReleaseMode)
+	r := gin.New()
+	r.Use(SetLogger(
+		WithWriter(buffer),
+		WithDefaultLevel(zerolog.InfoLevel),
+		WithClientErrorLevel(zerolog.ErrorLevel),
+		WithServerErrorLevel(zerolog.FatalLevel),
+		WithPathLevel(map[string]zerolog.Level{
+			"/example": zerolog.DebugLevel,
+		}),
+	))
+	r.GET("/example", func(c *gin.Context) {})
+	r.POST("/example", func(c *gin.Context) {
+		c.String(http.StatusBadRequest, "ok")
+	})
+	r.PUT("/example", func(c *gin.Context) {
+		c.String(http.StatusBadGateway, "ok")
+	})
+	r.GET("/example2", func(c *gin.Context) {})
+
+	performRequest(r, "GET", "/example")
+	assert.Contains(t, buffer.String(), "DBG")
+
+	buffer.Reset()
+	performRequest(r, "GET", "/example2")
+	assert.Contains(t, buffer.String(), "INF")
+
+	buffer.Reset()
+	performRequest(r, "POST", "/example")
+	assert.Contains(t, buffer.String(), "ERR")
+
+	buffer.Reset()
+	performRequest(r, "PUT", "/example")
+	assert.Contains(t, buffer.String(), "FTL")
+}
+
 func BenchmarkLogger(b *testing.B) {
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()
