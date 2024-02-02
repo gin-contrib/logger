@@ -14,6 +14,9 @@ import (
 
 type Fn func(*gin.Context, zerolog.Logger) zerolog.Logger
 
+// Skipper is a function to skip logs based on provided Context
+type Skipper func(c *gin.Context) bool
+
 // Config defines the config for logger middleware
 type config struct {
 	logger Fn
@@ -21,6 +24,9 @@ type config struct {
 	utc             bool
 	skipPath        []string
 	skipPathRegexps []*regexp.Regexp
+	// skip is a Skipper that indicates which logs should not be written.
+	// Optional.
+	skip Skipper
 	// Output is a writer where logs are written.
 	// Optional. Default value is gin.DefaultWriter.
 	output io.Writer
@@ -84,7 +90,7 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 		c.Next()
 		track := true
 
-		if _, ok := skip[path]; ok {
+		if _, ok := skip[path]; ok || (cfg.skip != nil && cfg.skip(c)) {
 			track = false
 		}
 
@@ -112,7 +118,9 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 				Str("path", path).
 				Str("ip", c.ClientIP()).
 				Dur("latency", latency).
-				Str("user_agent", c.Request.UserAgent()).Logger()
+				Str("user_agent", c.Request.UserAgent()).
+				Int("body_size", c.Writer.Size()).
+				Logger()
 
 			msg := "Request"
 			if len(c.Errors) > 0 {

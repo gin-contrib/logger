@@ -88,3 +88,12 @@ func WithServerErrorLevel(lvl zerolog.Level) Option {
 		c.serverErrorLevel = lvl
 	})
 }
+
+// WithSkipper set function to skip middleware
+// requests with this function returning true will not have their logs written
+// Default is nil
+func WithSkipper(s Skipper) Option {
+	return optionFunc(func(c *config) {
+		c.skip = s
+	})
+}

@@ -102,6 +102,15 @@ func main() {
     c.String(http.StatusOK, "pong "+fmt.Sprint(time.Now().Unix()))
   })
 
+  // Example of skipper usage
+  r.GET("/health", logger.SetLogger(
+    logger.WithSkipper(func(c *gin.Context) bool {
+      return c.Request.URL.Path == "/health"
+    }),
+  ), func(c *gin.Context) {
+    c.String(http.StatusOK, "pong "+fmt.Sprint(time.Now().Unix()))
+  })
+
   // Listen and Server in 0.0.0.0:8080
   if err := r.Run(":8080"); err != nil {
     log.Fatal().Msg("can' start server with 8080 port")
