@@ -14,6 +14,9 @@ import (
 
 type Fn func(*gin.Context, zerolog.Logger) zerolog.Logger
 
+// Skipper is a function to skip logs based on provided Context
+type Skipper func(c *gin.Context) bool
+
 // Config defines the config for logger middleware
 type config struct {
 	logger Fn
@@ -21,6 +24,9 @@ type config struct {
 	utc             bool
 	skipPath        []string
 	skipPathRegexps []*regexp.Regexp
+	// skip is a Skipper that indicates which logs should not be written.
+	// Optional.
+	skip Skipper
 	// Output is a writer where logs are written.
 	// Optional. Default value is gin.DefaultWriter.
 	output io.Writer
@@ -30,6 +36,8 @@ type config struct {
 	clientErrorLevel zerolog.Level
 	// the log level used for request with status code >= 500
 	serverErrorLevel zerolog.Level
+	// the log level to use for a specific path with status code < 400
+	pathLevels map[string]zerolog.Level
 }
 
 var isTerm bool = isatty.IsTerminal(os.Stdout.Fd())
@@ -83,7 +91,7 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 		c.Next()
 		track := true
 
-		if _, ok := skip[path]; ok {
+		if _, ok := skip[path]; ok || (cfg.skip != nil && cfg.skip(c)) {
 			track = false
 		}
 
@@ -111,11 +119,15 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 			}
 
 			var evt *zerolog.Event
+			level, hasLevel := cfg.pathLevels[path]
+
 			switch {
 			case c.Writer.Status() >= http.StatusBadRequest && c.Writer.Status() < http.StatusInternalServerError:
 				evt = rl.WithLevel(cfg.clientErrorLevel)
 			case c.Writer.Status() >= http.StatusInternalServerError:
 				evt = rl.WithLevel(cfg.serverErrorLevel)
+			case hasLevel:
+				evt = rl.WithLevel(level)
 			default:
 				evt = rl.WithLevel(cfg.defaultLevel)
 			}
@@ -126,6 +138,7 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 				Str("ip", c.ClientIP()).
 				Dur("latency", latency).
 				Str("user_agent", c.Request.UserAgent()).
+				Int("body_size", c.Writer.Size()).
 				Msg(msg)
 		}
 	}
