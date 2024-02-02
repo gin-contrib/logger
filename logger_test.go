@@ -226,6 +226,29 @@ func TestLoggerCustomLevel(t *testing.T) {
 	assert.Contains(t, buffer.String(), "FTL")
 }
 
+func TestLoggerSkipper(t *testing.T) {
+	buffer := new(bytes.Buffer)
+	gin.SetMode(gin.ReleaseMode)
+	r := gin.New()
+	r.Use(SetLogger(
+		WithWriter(buffer),
+		WithSkipper(func(c *gin.Context) bool {
+			return c.Request.URL.Path == "/example2"
+		}),
+	))
+	r.GET("/example", func(c *gin.Context) {})
+	r.GET("/example2", func(c *gin.Context) {})
+
+	performRequest(r, "GET", "/example")
+	assert.Contains(t, buffer.String(), "GET")
+	assert.Contains(t, buffer.String(), "/example")
+
+	buffer.Reset()
+	performRequest(r, "GET", "/example2")
+	assert.NotContains(t, buffer.String(), "GET")
+	assert.NotContains(t, buffer.String(), "/example2")
+}
+
 func BenchmarkLogger(b *testing.B) {
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()
