@@ -97,3 +97,21 @@ func WithSkipper(s Skipper) Option {
 		c.skip = s
 	})
 }
+
+// WithDefaultFieldsDisabled disabled default fields
+// This includes latency field
+// Default is false
+func WithDefaultFieldsDisabled() Option {
+	return optionFunc(func(c *config) {
+		c.disableDefaultFields = true
+	})
+}
+
+// WithLatency sets latency field logging
+// This is ignored when WithDefaultFieldsDisabled is omitted
+// Default is false
+func WithLatency() Option {
+	return optionFunc(func(c *config) {
+		c.latency = true
+	})
+}
