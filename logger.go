@@ -76,8 +76,9 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 		Timestamp().
 		Logger()
 	return func(c *gin.Context) {
+		rl := l
 		if cfg.logger != nil {
-			l = cfg.logger(c, l)
+			rl = cfg.logger(c, l)
 		}
 
 		start := time.Now()
@@ -112,7 +113,25 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 			}
 			latency := end.Sub(start)
 
-			l = l.With().
+			msg := "Request"
+			if len(c.Errors) > 0 {
+				msg = c.Errors.String()
+			}
+
+			var evt *zerolog.Event
+			level, hasLevel := cfg.pathLevels[path]
+
+			switch {
+			case c.Writer.Status() >= http.StatusBadRequest && c.Writer.Status() < http.StatusInternalServerError:
+				evt = rl.WithLevel(cfg.clientErrorLevel)
+			case c.Writer.Status() >= http.StatusInternalServerError:
+				evt = rl.WithLevel(cfg.serverErrorLevel)
+			case hasLevel:
+				evt = rl.WithLevel(level)
+			default:
+				evt = rl.WithLevel(cfg.defaultLevel)
+			}
+			evt.
 				Int("status", c.Writer.Status()).
 				Str("method", c.Request.Method).
 				Str("path", path).
@@ -120,35 +139,7 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 				Dur("latency", latency).
 				Str("user_agent", c.Request.UserAgent()).
 				Int("body_size", c.Writer.Size()).
-				Logger()
-
-			msg := "Request"
-			if len(c.Errors) > 0 {
-				msg = c.Errors.String()
-			}
-
-			level, hasLevel := cfg.pathLevels[path]
-
-			switch {
-			case c.Writer.Status() >= http.StatusBadRequest && c.Writer.Status() < http.StatusInternalServerError:
-				{
-					l.WithLevel(cfg.clientErrorLevel).
-						Msg(msg)
-				}
-			case c.Writer.Status() >= http.StatusInternalServerError:
-				{
-					l.WithLevel(cfg.serverErrorLevel).
-						Msg(msg)
-				}
-			case hasLevel:
-				{
-					l.WithLevel(level).
-						Msg(msg)
-				}
-			default:
-				l.WithLevel(cfg.defaultLevel).
-					Msg(msg)
-			}
+				Msg(msg)
 		}
 	}
 }
