@@ -1,5 +1,10 @@
 name: Run Tests
 
+# Cancel the workflow in progress in newer build is about to start.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
 on:
   push:
     branches:
@@ -65,3 +70,4 @@ jobs:
         uses: codecov/codecov-action@v4
         with:
           flags: ${{ matrix.os }},go-${{ matrix.go }}
+  
