@@ -12,12 +12,12 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - name: Setup go
-        uses: actions/setup-go@v5
-        with:
-          go-version: "^1.21"
       - name: Checkout repository
         uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: "go.mod"
+          check-latest: true
       - name: Setup golangci-lint
         uses: golangci/golangci-lint-action@v4
         with:
