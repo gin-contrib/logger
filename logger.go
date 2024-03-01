@@ -135,8 +135,9 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 			default:
 				evt = rl.WithLevel(cfg.defaultLevel)
 			}
-      
-      if !cfg.disableDefaultFields {
+
+			switch {
+			case !cfg.disableDefaultFields:
 				evt.
 					Int("status", c.Writer.Status()).
 					Str("method", c.Request.Method).
@@ -146,14 +147,14 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 					Str("user_agent", c.Request.UserAgent()).
 					Int("body_size", c.Writer.Size()).
 					Msg(msg)
-			} else if cfg.latency {
+			case cfg.latency:
 				evt.
 					Dur("latency", latency).
 					Msg(msg)
-      } else {
-        evt.
-          Msg(msg)
-      }
+			default:
+				evt.
+					Msg(msg)
+			}
 		}
 	}
 }
