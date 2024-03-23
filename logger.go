@@ -38,6 +38,10 @@ type config struct {
 	serverErrorLevel zerolog.Level
 	// the log level to use for a specific path with status code < 400
 	pathLevels map[string]zerolog.Level
+	// should default field be used
+	disableDefaultFields bool
+	// should latency be logged as a field
+	latency bool
 }
 
 var isTerm bool = isatty.IsTerminal(os.Stdout.Fd())
@@ -131,15 +135,26 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 			default:
 				evt = rl.WithLevel(cfg.defaultLevel)
 			}
-			evt.
-				Int("status", c.Writer.Status()).
-				Str("method", c.Request.Method).
-				Str("path", path).
-				Str("ip", c.ClientIP()).
-				Dur("latency", latency).
-				Str("user_agent", c.Request.UserAgent()).
-				Int("body_size", c.Writer.Size()).
-				Msg(msg)
+
+			switch {
+			case !cfg.disableDefaultFields:
+				evt.
+					Int("status", c.Writer.Status()).
+					Str("method", c.Request.Method).
+					Str("path", path).
+					Str("ip", c.ClientIP()).
+					Dur("latency", latency).
+					Str("user_agent", c.Request.UserAgent()).
+					Int("body_size", c.Writer.Size()).
+					Msg(msg)
+			case cfg.latency:
+				evt.
+					Dur("latency", latency).
+					Msg(msg)
+			default:
+				evt.
+					Msg(msg)
+			}
 		}
 	}
 }
