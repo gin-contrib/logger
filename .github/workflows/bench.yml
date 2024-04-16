@@ -91,8 +91,9 @@ jobs:
             continue-on-error: true
             uses: marocchino/sticky-pull-request-comment@v2
             with:
-              GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               header: bench
+              hide: true
+              hide_classify: "OUTDATED"
               message: |
                 ### Benchmark Result
                 <details><summary>Benchmark result compared against master branch</summary>
