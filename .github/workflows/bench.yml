@@ -80,7 +80,7 @@ jobs:
               echo "${{ needs.benchmark-pr.outputs.result }}" > pr.bench
               echo "${{ needs.benchmark-master.outputs.result }}" > master.bench
               echo "STAT<<EOF" >> "$GITHUB_OUTPUT"
-              benchstat pr.bench master.bench >> "$GITHUB_OUTPUT"
+              benchstat master.bench pr.bench >> "$GITHUB_OUTPUT"
               echo "EOF" >> "$GITHUB_OUTPUT"
           - name: Comment benchmark result
             if: ${{ !env.ACT }}
