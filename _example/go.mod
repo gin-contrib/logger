@@ -2,8 +2,6 @@ module test
 
 go 1.21
 
-toolchain go1.21.4
-
 require (
 	github.com/gin-contrib/logger v0.2.6
 	github.com/gin-contrib/requestid v1.0.0
