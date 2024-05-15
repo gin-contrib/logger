@@ -97,3 +97,11 @@ func WithSkipper(s Skipper) Option {
 		c.skip = s
 	})
 }
+
+// WithContext enables passing the context to the logger event so that zerolog
+// hooks can read data out of it.
+func WithContext() Option {
+	return optionFunc(func(c *config) {
+		c.passContext = true
+	})
+}

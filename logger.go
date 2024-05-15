@@ -24,6 +24,7 @@ type config struct {
 	utc             bool
 	skipPath        []string
 	skipPathRegexps []*regexp.Regexp
+	passContext     bool
 	// skip is a Skipper that indicates which logs should not be written.
 	// Optional.
 	skip Skipper
@@ -130,6 +131,9 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 				evt = rl.WithLevel(level)
 			default:
 				evt = rl.WithLevel(cfg.defaultLevel)
+			}
+			if cfg.passContext {
+				evt = evt.Ctx(c)
 			}
 			evt.
 				Int("status", c.Writer.Status()).
