@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/gin-gonic/gin v1.10.0
 	github.com/mattn/go-isatty v0.0.20
-	github.com/rs/zerolog v1.32.0
+	github.com/rs/zerolog v1.33.0
 	github.com/stretchr/testify v1.9.0
 )
 
