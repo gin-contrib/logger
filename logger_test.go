@@ -298,6 +298,36 @@ func TestLoggerSkipper(t *testing.T) {
 	assert.NotContains(t, buffer.String(), "/example2")
 }
 
+func TestLoggerContext(t *testing.T) {
+	buffer := new(bytes.Buffer)
+
+	l := zerolog.New(zerolog.ConsoleWriter{
+		Out:     buffer,
+		NoColor: true,
+	}).
+		Hook(zerolog.HookFunc(func(e *zerolog.Event, _ zerolog.Level, _ string) {
+			ctx := e.GetCtx()
+			assert.IsType(t, (*gin.Context)(nil), ctx)
+			if val, ok := ctx.Value("key").(string); ok {
+				e.Str("key", val)
+			}
+		}))
+
+	gin.SetMode(gin.ReleaseMode)
+	r := gin.New()
+	r.Use(SetLogger(
+		WithLogger(func(_ *gin.Context, _ zerolog.Logger) zerolog.Logger { return l }),
+		WithContext(),
+	))
+	r.GET("/example", func(c *gin.Context) {
+		c.Set("key", "value")
+	})
+
+	performRequest(r, "GET", "/example")
+
+	assert.Contains(t, buffer.String(), "key=value")
+}
+
 func BenchmarkLogger(b *testing.B) {
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()
