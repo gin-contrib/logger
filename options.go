@@ -89,9 +89,17 @@ func WithServerErrorLevel(lvl zerolog.Level) Option {
 	})
 }
 
-// WithSkipper set function to skip middleware
-// requests with this function returning true will not have their logs written
-// Default is nil
+// WithSkipper returns an Option that sets the Skipper function in the config.
+// The Skipper function determines whether a request should be skipped for logging.
+//
+// Parameters:
+//
+//	s (Skipper): A function that takes a gin.Context and returns a boolean indicating
+//	             whether the request should be skipped.
+//
+// Returns:
+//
+//	Option: An option that sets the Skipper function in the config.
 func WithSkipper(s Skipper) Option {
 	return optionFunc(func(c *config) {
 		c.skip = s
