@@ -14,6 +14,9 @@ import (
 
 type Fn func(*gin.Context, zerolog.Logger) zerolog.Logger
 
+// Skipper is a function to skip logs based on provided Context
+type Skipper func(c *gin.Context) bool
+
 // Config defines the config for logger middleware
 type config struct {
 	logger Fn
@@ -21,6 +24,9 @@ type config struct {
 	utc             bool
 	skipPath        []string
 	skipPathRegexps []*regexp.Regexp
+	// skip is a Skipper that indicates which logs should not be written.
+	// Optional.
+	skip Skipper
 	// Output is a writer where logs are written.
 	// Optional. Default value is gin.DefaultWriter.
 	output io.Writer
@@ -30,6 +36,8 @@ type config struct {
 	clientErrorLevel zerolog.Level
 	// the log level used for request with status code >= 500
 	serverErrorLevel zerolog.Level
+	// the log level to use for a specific path with status code < 400
+	pathLevels map[string]zerolog.Level
 }
 
 const loggerKey = "_gin-contrib/logger_"
@@ -70,8 +78,9 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 		Timestamp().
 		Logger()
 	return func(c *gin.Context) {
+		rl := l
 		if cfg.logger != nil {
-			l = cfg.logger(c, l)
+			rl = cfg.logger(c, l)
 		}
 
 		start := time.Now()
@@ -82,7 +91,8 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 		}
 
 		track := true
-		if _, ok := skip[path]; ok {
+
+		if _, ok := skip[path]; ok || (cfg.skip != nil && cfg.skip(c)) {
 			track = false
 		}
 
@@ -115,30 +125,33 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 			}
 			latency := end.Sub(start)
 
-			l = l.With().
-				Int("status", c.Writer.Status()).
-				Dur("latency", latency).Logger()
-
 			msg := "Request"
 			if len(c.Errors) > 0 {
 				msg = c.Errors.String()
 			}
 
+			var evt *zerolog.Event
+			level, hasLevel := cfg.pathLevels[path]
+
 			switch {
 			case c.Writer.Status() >= http.StatusBadRequest && c.Writer.Status() < http.StatusInternalServerError:
-				{
-					l.WithLevel(cfg.clientErrorLevel).
-						Msg(msg)
-				}
+				evt = rl.WithLevel(cfg.clientErrorLevel).Ctx(c)
 			case c.Writer.Status() >= http.StatusInternalServerError:
-				{
-					l.WithLevel(cfg.serverErrorLevel).
-						Msg(msg)
-				}
+				evt = rl.WithLevel(cfg.serverErrorLevel).Ctx(c)
+			case hasLevel:
+				evt = rl.WithLevel(level).Ctx(c)
 			default:
-				l.WithLevel(cfg.defaultLevel).
-					Msg(msg)
+				evt = rl.WithLevel(cfg.defaultLevel).Ctx(c)
 			}
+			evt.
+				Int("status", c.Writer.Status()).
+				Str("method", c.Request.Method).
+				Str("path", path).
+				Str("ip", c.ClientIP()).
+				Dur("latency", latency).
+				Str("user_agent", c.Request.UserAgent()).
+				Int("body_size", c.Writer.Size()).
+				Msg(msg)
 		}
 	}
 }

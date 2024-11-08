@@ -3,9 +3,12 @@ package logger
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"regexp"
+	"strings"
+	"sync"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -162,6 +165,52 @@ func TestLoggerWithLevels(t *testing.T) {
 	assert.Contains(t, buffer.String(), "FTL")
 }
 
+type concurrentBuffer struct {
+	mu sync.Mutex
+	b  bytes.Buffer
+}
+
+func (b *concurrentBuffer) Write(p []byte) (n int, err error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.b.Write(p)
+}
+
+func TestCustomLoggerIssue68(t *testing.T) {
+	buffer := new(concurrentBuffer)
+	gin.SetMode(gin.ReleaseMode)
+	r := gin.New()
+	l := zerolog.New(buffer)
+	r.Use(SetLogger(
+		WithLogger(func(*gin.Context, zerolog.Logger) zerolog.Logger { return l }),
+		WithDefaultLevel(zerolog.DebugLevel),
+		WithClientErrorLevel(zerolog.ErrorLevel),
+		WithServerErrorLevel(zerolog.FatalLevel),
+	))
+	r.GET("/example", func(c *gin.Context) {})
+
+	// concurrent requests should only have their info logged once
+	var wg sync.WaitGroup
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		req := fmt.Sprintf("/example?a=%d", i)
+		go func() {
+			defer wg.Done()
+			performRequest(r, "GET", req)
+		}()
+	}
+	wg.Wait()
+
+	bs := buffer.b.String()
+	for i := 0; i < 10; i++ {
+		// should contain each request log exactly once
+		msg := fmt.Sprintf("/example?a=%d", i)
+		if assert.Contains(t, bs, msg) {
+			assert.Equal(t, strings.Index(bs, msg), strings.LastIndex(bs, msg))
+		}
+	}
+}
+
 func TestLoggerParseLevel(t *testing.T) {
 	type args struct {
 		levelStr string
@@ -197,6 +246,67 @@ func TestLoggerParseLevel(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestLoggerCustomLevel(t *testing.T) {
+	buffer := new(bytes.Buffer)
+	gin.SetMode(gin.ReleaseMode)
+	r := gin.New()
+	r.Use(SetLogger(
+		WithWriter(buffer),
+		WithDefaultLevel(zerolog.InfoLevel),
+		WithClientErrorLevel(zerolog.ErrorLevel),
+		WithServerErrorLevel(zerolog.FatalLevel),
+		WithPathLevel(map[string]zerolog.Level{
+			"/example": zerolog.DebugLevel,
+		}),
+	))
+	r.GET("/example", func(c *gin.Context) {})
+	r.POST("/example", func(c *gin.Context) {
+		c.String(http.StatusBadRequest, "ok")
+	})
+	r.PUT("/example", func(c *gin.Context) {
+		c.String(http.StatusBadGateway, "ok")
+	})
+	r.GET("/example2", func(c *gin.Context) {})
+
+	performRequest(r, "GET", "/example")
+	assert.Contains(t, buffer.String(), "DBG")
+
+	buffer.Reset()
+	performRequest(r, "GET", "/example2")
+	assert.Contains(t, buffer.String(), "INF")
+
+	buffer.Reset()
+	performRequest(r, "POST", "/example")
+	assert.Contains(t, buffer.String(), "ERR")
+
+	buffer.Reset()
+	performRequest(r, "PUT", "/example")
+	assert.Contains(t, buffer.String(), "FTL")
+}
+
+func TestLoggerSkipper(t *testing.T) {
+	buffer := new(bytes.Buffer)
+	gin.SetMode(gin.ReleaseMode)
+	r := gin.New()
+	r.Use(SetLogger(
+		WithWriter(buffer),
+		WithSkipper(func(c *gin.Context) bool {
+			return c.Request.URL.Path == "/example2"
+		}),
+	))
+	r.GET("/example", func(c *gin.Context) {})
+	r.GET("/example2", func(c *gin.Context) {})
+
+	performRequest(r, "GET", "/example")
+	assert.Contains(t, buffer.String(), "GET")
+	assert.Contains(t, buffer.String(), "/example")
+
+	buffer.Reset()
+	performRequest(r, "GET", "/example2")
+	assert.NotContains(t, buffer.String(), "GET")
+	assert.NotContains(t, buffer.String(), "/example2")
 }
 
 func BenchmarkLogger(b *testing.B) {

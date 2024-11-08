@@ -53,6 +53,13 @@ func WithSkipPath(s []string) Option {
 	})
 }
 
+// WithPathLevel use logging level for successful requests to a specific path
+func WithPathLevel(m map[string]zerolog.Level) Option {
+	return optionFunc(func(c *config) {
+		c.pathLevels = m
+	})
+}
+
 // WithWriter change the default output writer.
 // Default is gin.DefaultWriter
 func WithWriter(s io.Writer) Option {
@@ -61,20 +68,32 @@ func WithWriter(s io.Writer) Option {
 	})
 }
 
+// WithDefaultLevel set the log level used for request with status code < 400
 func WithDefaultLevel(lvl zerolog.Level) Option {
 	return optionFunc(func(c *config) {
 		c.defaultLevel = lvl
 	})
 }
 
+// WithClientErrorLevel set the log level used for request with status code between 400 and 499
 func WithClientErrorLevel(lvl zerolog.Level) Option {
 	return optionFunc(func(c *config) {
 		c.clientErrorLevel = lvl
 	})
 }
 
+// WithServerErrorLevel set the log level used for request with status code >= 500
 func WithServerErrorLevel(lvl zerolog.Level) Option {
 	return optionFunc(func(c *config) {
 		c.serverErrorLevel = lvl
+	})
+}
+
+// WithSkipper set function to skip middleware
+// requests with this function returning true will not have their logs written
+// Default is nil
+func WithSkipper(s Skipper) Option {
+	return optionFunc(func(c *config) {
+		c.skip = s
 	})
 }
