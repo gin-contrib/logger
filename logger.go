@@ -40,6 +40,8 @@ type config struct {
 	pathLevels map[string]zerolog.Level
 }
 
+const loggerKey = "_gin-contrib/logger_"
+
 var isTerm bool = isatty.IsTerminal(os.Stdout.Fd())
 
 // SetLogger initializes the logging middleware.
@@ -88,7 +90,6 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 			path = path + "?" + raw
 		}
 
-		c.Next()
 		track := true
 
 		if _, ok := skip[path]; ok || (cfg.skip != nil && cfg.skip(c)) {
@@ -105,6 +106,17 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 				break
 			}
 		}
+
+		if track {
+			l = l.With().
+				Str("method", c.Request.Method).
+				Str("path", path).
+				Str("ip", c.ClientIP()).
+				Str("user_agent", c.Request.UserAgent()).Logger()
+		}
+		c.Set(loggerKey, l)
+
+		c.Next()
 
 		if track {
 			end := time.Now()
@@ -148,4 +160,9 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 // returns an error if the input string does not match known values.
 func ParseLevel(levelStr string) (zerolog.Level, error) {
 	return zerolog.ParseLevel(levelStr)
+}
+
+// Get return the logger associated with a gin context
+func Get(c *gin.Context) zerolog.Logger {
+	return c.MustGet(loggerKey).(zerolog.Logger)
 }
