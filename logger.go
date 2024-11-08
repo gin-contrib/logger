@@ -123,13 +123,13 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 
 			switch {
 			case c.Writer.Status() >= http.StatusBadRequest && c.Writer.Status() < http.StatusInternalServerError:
-				evt = rl.WithLevel(cfg.clientErrorLevel)
+				evt = rl.WithLevel(cfg.clientErrorLevel).Ctx(c)
 			case c.Writer.Status() >= http.StatusInternalServerError:
-				evt = rl.WithLevel(cfg.serverErrorLevel)
+				evt = rl.WithLevel(cfg.serverErrorLevel).Ctx(c)
 			case hasLevel:
-				evt = rl.WithLevel(level)
+				evt = rl.WithLevel(level).Ctx(c)
 			default:
-				evt = rl.WithLevel(cfg.defaultLevel)
+				evt = rl.WithLevel(cfg.defaultLevel).Ctx(c)
 			}
 			evt.
 				Int("status", c.Writer.Status()).
