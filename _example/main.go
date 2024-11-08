@@ -16,6 +16,24 @@ import (
 
 var rxURL = regexp.MustCompile(`^/regexp\d*`)
 
+// main initializes the Gin router, sets up various routes with different logging
+// configurations, and starts the server on port 8080. The routes demonstrate
+// different ways to use the logger middleware, including logging all requests,
+// skipping certain paths, adding custom fields, and using JSON format logs.
+//
+// Routes:
+// - GET /pong: Logs request with default logger settings.
+// - GET /ping: Logs request with custom settings, including skipping paths and using UTC time.
+// - GET /skip: Logs request but skips logging for the /skip path.
+// - GET /regexp1: Logs request but skips logging for paths matching the provided regex.
+// - GET /regexp2: Logs request but skips logging for paths matching the provided regex.
+// - GET /id: Logs request with custom fields including trace ID, span ID, and a custom request ID.
+// - GET /json: Logs request in JSON format.
+// - GET /health: Skips logging for the /health path.
+// - GET /v1/ping: Skips logging for GET requests in the /v1 group.
+// - POST /v1/ping: Logs request for POST requests in the /v1 group.
+//
+// The server listens on 0.0.0.0:8080.
 func main() {
 	r := gin.New()
 
