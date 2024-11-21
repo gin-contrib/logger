@@ -180,9 +180,9 @@ func TestCustomLoggerIssue68(t *testing.T) {
 	buffer := new(concurrentBuffer)
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()
-	l := zerolog.New(buffer)
+	// Use JSON logger JSON will explicitly print keys multiple times if they are added multiple times (because of mutations to the logger)
 	r.Use(SetLogger(
-		WithLogger(func(*gin.Context, zerolog.Logger) zerolog.Logger { return l }),
+		WithLogger(func(_ *gin.Context, l zerolog.Logger) zerolog.Logger { return l.Output(buffer).With().Logger() }),
 		WithDefaultLevel(zerolog.DebugLevel),
 		WithClientErrorLevel(zerolog.ErrorLevel),
 		WithServerErrorLevel(zerolog.FatalLevel),
