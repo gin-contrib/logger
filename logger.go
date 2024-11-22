@@ -137,14 +137,16 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 			}
 		}
 
+		// Use a separate logger to save to the context, as we want to avoid mutating the original logger.
+		contextLogger := rl
 		if track {
-			l = l.With().
+			contextLogger = rl.With().
 				Str("method", c.Request.Method).
 				Str("path", path).
 				Str("ip", c.ClientIP()).
 				Str("user_agent", c.Request.UserAgent()).Logger()
 		}
-		c.Set(loggerKey, l)
+		c.Set(loggerKey, contextLogger)
 
 		c.Next()
 
