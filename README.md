@@ -6,7 +6,7 @@
 [![GoDoc](https://godoc.org/github.com/gin-contrib/logger?status.svg)](https://godoc.org/github.com/gin-contrib/logger)
 [![Join the chat at https://gitter.im/gin-gonic/gin](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/gin-gonic/gin)
 
-Gin middleware/handler to logger url path using [rs/zerolog](https://github.com/rs/zerolog).
+Gin middleware/handler to log URL paths using [rs/zerolog](https://github.com/rs/zerolog).
 
 ## Example
 
