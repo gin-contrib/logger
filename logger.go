@@ -17,6 +17,8 @@ import (
 // within the context of a Gin HTTP request.
 type Fn func(*gin.Context, zerolog.Logger) zerolog.Logger
 
+type EventFn func(*gin.Context, *zerolog.Event) *zerolog.Event
+
 // Skipper defines a function to skip middleware. It takes a gin.Context as input
 // and returns a boolean indicating whether to skip the middleware for the given context.
 type Skipper func(c *gin.Context) bool
@@ -25,6 +27,8 @@ type Skipper func(c *gin.Context) bool
 type config struct {
 	// logger is a function that defines the logging behavior.
 	logger Fn
+	// context is a function that defines the logging behavior of gin.Context data
+	context EventFn
 	// utc is a boolean stating whether to use UTC time zone or local.
 	utc bool
 	// skipPath is a list of paths to be skipped from logging.
@@ -174,6 +178,9 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 				evt = rl.WithLevel(level).Ctx(c)
 			default:
 				evt = rl.WithLevel(cfg.defaultLevel).Ctx(c)
+			}
+			if cfg.context != nil {
+				evt = cfg.context(c, evt)
 			}
 			evt.
 				Int("status", c.Writer.Status()).
