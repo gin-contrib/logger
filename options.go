@@ -82,7 +82,9 @@ func WithClientErrorLevel(lvl zerolog.Level) Option {
 	})
 }
 
-// WithServerErrorLevel set the log level used for request with status code >= 500
+// WithServerErrorLevel sets the logging level for server errors.
+// It takes a zerolog.Level as an argument and returns an Option.
+// This option modifies the serverErrorLevel field in the config struct.
 func WithServerErrorLevel(lvl zerolog.Level) Option {
 	return optionFunc(func(c *config) {
 		c.serverErrorLevel = lvl
