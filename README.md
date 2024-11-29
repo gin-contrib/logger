@@ -102,6 +102,17 @@ func main() {
     c.String(http.StatusOK, "pong "+fmt.Sprint(time.Now().Unix()))
   })
 
+  // Example of logging data on gin.Context
+  r.GET("/context", logger.SetLogger(
+    logger.WithContext(func(c *gin.Context, e *zerolog.Event) *zerolog.Event {
+      return e.Any("data1", c.MustGet("data1")).Any("data2", c.MustGet("data2"))
+    }),
+  ), func(c *gin.Context) {
+    c.Set("data1", rand.Intn(100))
+    c.Set("data2", rand.Intn(100))
+    c.String(http.StatusOK, "pong "+fmt.Sprint(time.Now().Unix()))
+  })
+
   // Example of skipper usage
   r.GET("/health", logger.SetLogger(
     logger.WithSkipper(func(c *gin.Context) bool {

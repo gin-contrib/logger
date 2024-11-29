@@ -106,6 +106,17 @@ func WithSkipper(s Skipper) Option {
 	})
 }
 
+// WithContext is an option for configuring the logger with a custom context function.
+// The provided function takes a *gin.Context and a *zerolog.Event, and returns a modified *zerolog.Event.
+// This allows for custom logging behavior based on the request context.
+//
+// Parameters:
+//
+//	fn - A function that takes a *gin.Context and a *zerolog.Event, and returns a modified *zerolog.Event.
+//
+// Returns:
+//
+//	An Option that applies the custom context function to the logger configuration.
 func WithContext(fn func(*gin.Context, *zerolog.Event) *zerolog.Event) Option {
 	return optionFunc(func(c *config) {
 		c.context = fn
