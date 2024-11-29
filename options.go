@@ -8,11 +8,15 @@ import (
 	"github.com/rs/zerolog"
 )
 
-// Option specifies instrumentation configuration options.
+// Option is an interface that defines a method to apply a configuration
+// to a given config instance. Implementations of this interface can be
+// used to modify the configuration settings of the logger.
 type Option interface {
 	apply(*config)
 }
 
+// Ensures that optionFunc implements the Option interface at compile time.
+// If optionFunc does not implement Option, a compile-time error will occur.
 var _ Option = (*optionFunc)(nil)
 
 type optionFunc func(*config)
@@ -21,14 +25,34 @@ func (o optionFunc) apply(c *config) {
 	o(c)
 }
 
-// WithLogger set custom logger func
+// WithLogger returns an Option that sets the logger function in the config.
+// The logger function is a function that takes a *gin.Context and a zerolog.Logger,
+// and returns a zerolog.Logger. This function is typically used to modify or enhance
+// the logger within the context of a Gin HTTP request.
+//
+// Parameters:
+//
+//	fn (Fn): A function that takes a *gin.Context and a zerolog.Logger, and returns a zerolog.Logger.
+//
+// Returns:
+//
+//	Option: An option that sets the logger function in the config.
 func WithLogger(fn func(*gin.Context, zerolog.Logger) zerolog.Logger) Option {
 	return optionFunc(func(c *config) {
 		c.logger = fn
 	})
 }
 
-// WithSkipPathRegexps multiple skip URL paths by regexp pattern
+// WithSkipPathRegexps returns an Option that sets the skipPathRegexps field in the config.
+// The skipPathRegexps field is a list of regular expressions that match paths to be skipped from logging.
+//
+// Parameters:
+//
+//	regs ([]*regexp.Regexp): A list of regular expressions to match paths to be skipped from logging.
+//
+// Returns:
+//
+//	Option: An option that sets the skipPathRegexps field in the config.
 func WithSkipPathRegexps(regs ...*regexp.Regexp) Option {
 	return optionFunc(func(c *config) {
 		if len(regs) == 0 {
@@ -39,7 +63,16 @@ func WithSkipPathRegexps(regs ...*regexp.Regexp) Option {
 	})
 }
 
-// WithUTC returns t with the location set to UTC.
+// WithUTC returns an Option that sets the utc field in the config.
+// The utc field is a boolean that indicates whether to use UTC time zone or local time zone.
+//
+// Parameters:
+//
+//	s (bool): A boolean indicating whether to use UTC time zone.
+//
+// Returns:
+//
+//	Option: An option that sets the utc field in the config.
 func WithUTC(s bool) Option {
 	return optionFunc(func(c *config) {
 		c.utc = s
