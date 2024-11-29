@@ -105,3 +105,9 @@ func WithSkipper(s Skipper) Option {
 		c.skip = s
 	})
 }
+
+func WithContext(fn func(*gin.Context, *zerolog.Event) *zerolog.Event) Option {
+	return optionFunc(func(c *config) {
+		c.context = fn
+	})
+}
