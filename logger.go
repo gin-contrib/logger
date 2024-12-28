@@ -84,7 +84,7 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 		defaultLevel:     zerolog.InfoLevel,
 		clientErrorLevel: zerolog.WarnLevel,
 		serverErrorLevel: zerolog.ErrorLevel,
-		output:           gin.DefaultWriter,
+		output:           os.Stderr,
 	}
 
 	// Apply each option to the config
