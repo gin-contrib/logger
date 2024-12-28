@@ -87,30 +87,24 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 		output:           gin.DefaultWriter,
 	}
 
-	// Loop through each option
+	// Apply each option to the config
 	for _, o := range opts {
-		// Call the option giving the instantiated
 		o.apply(cfg)
 	}
 
-	var skip map[string]struct{}
-	if length := len(cfg.skipPath); length > 0 {
-		skip = make(map[string]struct{}, length)
-		for _, path := range cfg.skipPath {
-			skip[path] = struct{}{}
-		}
+	// Create a set of paths to skip logging
+	skip := make(map[string]struct{}, len(cfg.skipPath))
+	for _, path := range cfg.skipPath {
+		skip[path] = struct{}{}
 	}
 
+	// Initialize the base logger
 	l := zerolog.New(cfg.output).
-		Output(
-			zerolog.ConsoleWriter{
-				Out:     cfg.output,
-				NoColor: !isTerm,
-			},
-		).
+		Output(zerolog.ConsoleWriter{Out: cfg.output, NoColor: !isTerm}).
 		With().
 		Timestamp().
 		Logger()
+
 	return func(c *gin.Context) {
 		rl := l
 		if cfg.logger != nil {
@@ -119,36 +113,32 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 
 		start := time.Now()
 		path := c.Request.URL.Path
-		raw := c.Request.URL.RawQuery
-		if raw != "" {
-			path = path + "?" + raw
+		if raw := c.Request.URL.RawQuery; raw != "" {
+			path += "?" + raw
 		}
 
 		track := true
-
 		if _, ok := skip[path]; ok || (cfg.skip != nil && cfg.skip(c)) {
 			track = false
 		}
 
-		if track && len(cfg.skipPathRegexps) > 0 {
+		if track {
 			for _, reg := range cfg.skipPathRegexps {
-				if !reg.MatchString(path) {
-					continue
+				if reg.MatchString(path) {
+					track = false
+					break
 				}
-
-				track = false
-				break
 			}
 		}
 
-		// Use a separate logger to save to the context, as we want to avoid mutating the original logger.
 		contextLogger := rl
 		if track {
 			contextLogger = rl.With().
 				Str("method", c.Request.Method).
 				Str("path", path).
 				Str("ip", c.ClientIP()).
-				Str("user_agent", c.Request.UserAgent()).Logger()
+				Str("user_agent", c.Request.UserAgent()).
+				Logger()
 		}
 		c.Set(loggerKey, contextLogger)
 
@@ -179,9 +169,11 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 			default:
 				evt = rl.WithLevel(cfg.defaultLevel).Ctx(c)
 			}
+
 			if cfg.context != nil {
 				evt = cfg.context(c, evt)
 			}
+
 			evt.
 				Int("status", c.Writer.Status()).
 				Str("method", c.Request.Method).
