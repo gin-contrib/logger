@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"math/rand"
 	"net/http"
@@ -107,6 +108,18 @@ func main() {
 		}),
 	), func(c *gin.Context) {
 		c.String(http.StatusOK, "pong "+fmt.Sprint(time.Now().Unix()))
+	})
+
+	// Example of a custom message to the log
+	r.GET("/message", logger.SetLogger(
+		logger.WithLogger(func(_ *gin.Context, l zerolog.Logger) zerolog.Logger {
+			return l.Output(gin.DefaultWriter).With().Logger()
+		}),
+		logger.WithMessage("Request ended"),
+	), func(c *gin.Context) {
+		c.Error(errors.New("some error has occured here"))
+		c.Error(errors.New("and some error has occured there"))
+		c.String(http.StatusBadGateway, "pong "+fmt.Sprint(time.Now().Unix()))
 	})
 
 	// Example of skipper usage
