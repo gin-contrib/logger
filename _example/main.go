@@ -109,6 +109,19 @@ func main() {
 		c.String(http.StatusOK, "pong "+fmt.Sprint(time.Now().Unix()))
 	})
 
+	// Example of specific status levels by http-status-codes
+	specificLevels := make(map[int]zerolog.Level)
+	specificLevels[429] = zerolog.TraceLevel
+
+	r.GET("/specific-status-levels", logger.SetLogger(
+		logger.WithLogger(func(_ *gin.Context, l zerolog.Logger) zerolog.Logger {
+			return l.Output(gin.DefaultWriter).With().Logger()
+		}),
+		logger.WithSpecificLogLevelByStatusCode(specificLevels),
+	), func(c *gin.Context) {
+		c.String(http.StatusBadRequest, "pong 429 "+fmt.Sprint(time.Now().Unix()))
+	})
+
 	// Example of skipper usage
 	r.GET("/health", logger.SetLogger(
 		logger.WithSkipper(func(c *gin.Context) bool {

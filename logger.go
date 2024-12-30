@@ -47,6 +47,8 @@ type config struct {
 	serverErrorLevel zerolog.Level
 	// pathLevels is a map of specific paths to log levels for requests with status code < 400.
 	pathLevels map[string]zerolog.Level
+	// specificLevelByStatusCode is a map of specific status codes to log levels every request
+	specificLevelByStatusCode map[int]zerolog.Level
 }
 
 const loggerKey = "_gin-contrib/logger_"
@@ -157,9 +159,13 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 			}
 
 			var evt *zerolog.Event
+
 			level, hasLevel := cfg.pathLevels[path]
+			specificLogLevel, hasSpecificLogLevel := cfg.specificLevelByStatusCode[c.Writer.Status()]
 
 			switch {
+			case hasSpecificLogLevel:
+				evt = rl.WithLevel(specificLogLevel).Ctx(c)
 			case c.Writer.Status() >= http.StatusBadRequest && c.Writer.Status() < http.StatusInternalServerError:
 				evt = rl.WithLevel(cfg.clientErrorLevel).Ctx(c)
 			case c.Writer.Status() >= http.StatusInternalServerError:
