@@ -157,3 +157,9 @@ func WithContext(fn func(*gin.Context, *zerolog.Event) *zerolog.Event) Option {
 		c.context = fn
 	})
 }
+
+func WithPathNoQuery(b bool) Option {
+	return optionFunc(func(c *config) {
+		c.pathNoQuery = b
+	})
+}
