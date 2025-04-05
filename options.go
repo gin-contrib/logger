@@ -165,3 +165,22 @@ func WithMessage(message string) Option {
 		c.message = message
 	})
 }
+
+// WithSpecificLogLevelByStatusCode is an option for configuring the logger with a specific log-level for http-requests.
+// The provided function takes a map that holds in the key, the correspondent status code and the desired *zerolog.Level
+// in the value.
+//
+// Parameters:
+//
+//		statusCodes - map that holds in the
+//	   					- key: http-status-code
+//						- value: zerolog.Level
+//
+// Returns:
+//
+//	An Option that applies the custom log-level to a specific http-status-code.
+func WithSpecificLogLevelByStatusCode(statusCodes map[int]zerolog.Level) Option {
+	return optionFunc(func(c *config) {
+		c.specificLevelByStatusCode = statusCodes
+	})
+}
