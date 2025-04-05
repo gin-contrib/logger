@@ -53,7 +53,7 @@ type config struct {
 
 const loggerKey = "_gin-contrib/logger_"
 
-var isTerm bool = isatty.IsTerminal(os.Stdout.Fd())
+var isTerm = isatty.IsTerminal(os.Stdout.Fd())
 
 // SetLogger returns a gin.HandlerFunc (middleware) that logs requests using zerolog.
 // It accepts a variadic number of Option functions to customize the logger's behavior.
@@ -120,19 +120,7 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 			path += "?" + raw
 		}
 
-		track := true
-		if _, ok := skip[path]; ok || (cfg.skip != nil && cfg.skip(c)) {
-			track = false
-		}
-
-		if track {
-			for _, reg := range cfg.skipPathRegexps {
-				if reg.MatchString(path) {
-					track = false
-					break
-				}
-			}
-		}
+		track := !shouldSkipLogging(path, skip, cfg, c)
 
 		contextLogger := rl
 		if track {
@@ -158,19 +146,7 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 				cfg.message += " with errors: " + c.Errors.String()
 			}
 
-			var evt *zerolog.Event
-			level, hasLevel := cfg.pathLevels[path]
-
-			switch {
-			case c.Writer.Status() >= http.StatusBadRequest && c.Writer.Status() < http.StatusInternalServerError:
-				evt = rl.WithLevel(cfg.clientErrorLevel).Ctx(c)
-			case c.Writer.Status() >= http.StatusInternalServerError:
-				evt = rl.WithLevel(cfg.serverErrorLevel).Ctx(c)
-			case hasLevel:
-				evt = rl.WithLevel(level).Ctx(c)
-			default:
-				evt = rl.WithLevel(cfg.defaultLevel).Ctx(c)
-			}
+			evt := getLogEvent(rl, cfg, c, path)
 
 			if cfg.context != nil {
 				evt = cfg.context(c, evt)
@@ -200,7 +176,33 @@ func ParseLevel(levelStr string) (zerolog.Level, error) {
 	return zerolog.ParseLevel(levelStr)
 }
 
-// Get retrieves the zerolog.Logger instance from the given gin.Context.
+func shouldSkipLogging(path string, skip map[string]struct{}, cfg *config, c *gin.Context) bool {
+	if _, ok := skip[path]; ok || (cfg.skip != nil && cfg.skip(c)) {
+		return true
+	}
+	for _, reg := range cfg.skipPathRegexps {
+		if reg.MatchString(path) {
+			return true
+		}
+	}
+	return false
+}
+
+func getLogEvent(rl zerolog.Logger, cfg *config, c *gin.Context, path string) *zerolog.Event {
+	level, hasLevel := cfg.pathLevels[path]
+	switch {
+	case c.Writer.Status() >= http.StatusBadRequest && c.Writer.Status() < http.StatusInternalServerError:
+		return rl.WithLevel(cfg.clientErrorLevel).Ctx(c)
+	case c.Writer.Status() >= http.StatusInternalServerError:
+		return rl.WithLevel(cfg.serverErrorLevel).Ctx(c)
+	case hasLevel:
+		return rl.WithLevel(level).Ctx(c)
+	default:
+		return rl.WithLevel(cfg.defaultLevel).Ctx(c)
+	}
+}
+
+// GetLogger retrieves the zerolog.Logger instance from the given gin.Context.
 // It assumes that the logger has been previously set in the context with the key loggerKey.
 // If the logger is not found, it will panic.
 //
