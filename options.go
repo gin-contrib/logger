@@ -157,3 +157,11 @@ func WithContext(fn func(*gin.Context, *zerolog.Event) *zerolog.Event) Option {
 		c.context = fn
 	})
 }
+
+// WithMessage is an option to set a custom log-message, when http-request has finished and logged
+// It takes a string as an argument and returns an Option.
+func WithMessage(message string) Option {
+	return optionFunc(func(c *config) {
+		c.message = message
+	})
+}

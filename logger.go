@@ -47,6 +47,8 @@ type config struct {
 	serverErrorLevel zerolog.Level
 	// pathLevels is a map of specific paths to log levels for requests with status code < 400.
 	pathLevels map[string]zerolog.Level
+	// message is a custom string that sets a log-message when http-request has finished
+	message string
 }
 
 const loggerKey = "_gin-contrib/logger_"
@@ -85,6 +87,7 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 		clientErrorLevel: zerolog.WarnLevel,
 		serverErrorLevel: zerolog.ErrorLevel,
 		output:           os.Stderr,
+		message:          "Request",
 	}
 
 	// Apply each option to the config
@@ -151,9 +154,8 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 			}
 			latency := end.Sub(start)
 
-			msg := "Request"
 			if len(c.Errors) > 0 {
-				msg = c.Errors.String()
+				cfg.message += " with errors: " + c.Errors.String()
 			}
 
 			var evt *zerolog.Event
@@ -182,7 +184,7 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 				Dur("latency", latency).
 				Str("user_agent", c.Request.UserAgent()).
 				Int("body_size", c.Writer.Size()).
-				Msg(msg)
+				Msg(cfg.message)
 		}
 	}
 }
