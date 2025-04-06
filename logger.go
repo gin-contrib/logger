@@ -12,44 +12,81 @@ import (
 	"github.com/rs/zerolog"
 )
 
-// Fn is a function type that takes a gin.Context and a zerolog.Logger as parameters,
-// and returns a zerolog.Logger. It is typically used to modify or enhance the logger
-// within the context of a Gin HTTP request.
+/*
+Fn is a function type that takes a gin.Context and a zerolog.Logger as parameters,
+and returns a zerolog.Logger. It is typically used to modify or enhance the logger
+within the context of a Gin HTTP request.
+*/
 type Fn func(*gin.Context, zerolog.Logger) zerolog.Logger
 
+/*
+EventFn is a function type that takes a gin.Context and a zerolog.Event as parameters,
+and returns a zerolog.Event. It is typically used to modify or enhance the event
+within the context of a Gin HTTP request.
+*/
 type EventFn func(*gin.Context, *zerolog.Event) *zerolog.Event
 
-// Skipper defines a function to skip middleware. It takes a gin.Context as input
-// and returns a boolean indicating whether to skip the middleware for the given context.
+/*
+Skipper defines a function to skip middleware. It takes a gin.Context as input
+and returns a boolean indicating whether to skip the middleware for the given context.
+*/
 type Skipper func(c *gin.Context) bool
 
-// config holds the configuration for the logger middleware.
+/*
+config holds the configuration for the logger middleware.
+*/
 type config struct {
-	// logger is a function that defines the logging behavior.
+	/*
+		logger is a function that defines the logging behavior.
+	*/
 	logger Fn
-	// context is a function that defines the logging behavior of gin.Context data
+	/*
+		context is a function that defines the logging behavior of gin.Context data
+	*/
 	context EventFn
-	// utc is a boolean stating whether to use UTC time zone or local.
+	/*
+		utc is a boolean stating whether to use UTC time zone or local.
+	*/
 	utc bool
-	// skipPath is a list of paths to be skipped from logging.
+	/*
+		skipPath is a list of paths to be skipped from logging.
+	*/
 	skipPath []string
-	// skipPathRegexps is a list of regular expressions to match paths to be skipped from logging.
+	/*
+		skipPathRegexps is a list of regular expressions to match paths to be skipped from logging.
+	*/
 	skipPathRegexps []*regexp.Regexp
-	// skip is a Skipper that indicates which logs should not be written. Optional.
+	/*
+		skip is a Skipper that indicates which logs should not be written. Optional.
+	*/
 	skip Skipper
-	// output is a writer where logs are written. Optional. Default value is gin.DefaultWriter.
+	/*
+		output is a writer where logs are written. Optional. Default value is gin.DefaultWriter.
+	*/
 	output io.Writer
-	// defaultLevel is the log level used for requests with status code < 400.
+	/*
+		defaultLevel is the log level used for requests with status code < 400.
+	*/
 	defaultLevel zerolog.Level
-	// clientErrorLevel is the log level used for requests with status code between 400 and 499.
+	/*
+		clientErrorLevel is the log level used for requests with status code between 400 and 499.
+	*/
 	clientErrorLevel zerolog.Level
-	// serverErrorLevel is the log level used for requests with status code >= 500.
+	/*
+		serverErrorLevel is the log level used for requests with status code >= 500.
+	*/
 	serverErrorLevel zerolog.Level
-	// pathLevels is a map of specific paths to log levels for requests with status code < 400.
+	/*
+		pathLevels is a map of specific paths to log levels for requests with status code < 400.
+	*/
 	pathLevels map[string]zerolog.Level
-	// message is a custom string that sets a log-message when http-request has finished
+	/*
+		message is a custom string that sets a log-message when http-request has finished
+	*/
 	message string
-	// specificLevelByStatusCode is a map of specific status codes to log levels every request
+	/*
+		specificLevelByStatusCode is a map of specific status codes to log levels every request
+	*/
 	specificLevelByStatusCode map[int]zerolog.Level
 }
 
@@ -57,32 +94,34 @@ const loggerKey = "_gin-contrib/logger_"
 
 var isTerm = isatty.IsTerminal(os.Stdout.Fd())
 
-// SetLogger returns a gin.HandlerFunc (middleware) that logs requests using zerolog.
-// It accepts a variadic number of Option functions to customize the logger's behavior.
-//
-// The logger configuration includes:
-// - defaultLevel: the default logging level (default: zerolog.InfoLevel).
-// - clientErrorLevel: the logging level for client errors (default: zerolog.WarnLevel).
-// - serverErrorLevel: the logging level for server errors (default: zerolog.ErrorLevel).
-// - output: the output writer for the logger (default: gin.DefaultWriter).
-// - skipPath: a list of paths to skip logging.
-// - skipPathRegexps: a list of regular expressions to skip logging for matching paths.
-// - logger: a custom logger function to use instead of the default logger.
-//
-// The middleware logs the following request details:
-// - method: the HTTP method of the request.
-// - path: the URL path of the request.
-// - ip: the client's IP address.
-// - user_agent: the User-Agent header of the request.
-// - status: the HTTP status code of the response.
-// - latency: the time taken to process the request.
-// - body_size: the size of the response body.
-//
-// The logging level for each request is determined based on the response status code:
-// - clientErrorLevel for 4xx status codes.
-// - serverErrorLevel for 5xx status codes.
-// - defaultLevel for other status codes.
-// - Custom levels can be set for specific paths using the pathLevels configuration.
+/*
+SetLogger returns a gin.HandlerFunc (middleware) that logs requests using zerolog.
+It accepts a variadic number of Option functions to customize the logger's behavior.
+
+The logger configuration includes:
+- defaultLevel: the default logging level (default: zerolog.InfoLevel).
+- clientErrorLevel: the logging level for client errors (default: zerolog.WarnLevel).
+- serverErrorLevel: the logging level for server errors (default: zerolog.ErrorLevel).
+- output: the output writer for the logger (default: gin.DefaultWriter).
+- skipPath: a list of paths to skip logging.
+- skipPathRegexps: a list of regular expressions to skip logging for matching paths.
+- logger: a custom logger function to use instead of the default logger.
+
+The middleware logs the following request details:
+- method: the HTTP method of the request.
+- path: the URL path of the request.
+- ip: the client's IP address.
+- user_agent: the User-Agent header of the request.
+- status: the HTTP status code of the response.
+- latency: the time taken to process the request.
+- body_size: the size of the response body.
+
+The logging level for each request is determined based on the response status code:
+- clientErrorLevel for 4xx status codes.
+- serverErrorLevel for 5xx status codes.
+- defaultLevel for other status codes.
+- Custom levels can be set for specific paths using the pathLevels configuration.
+*/
 func SetLogger(opts ...Option) gin.HandlerFunc {
 	cfg := &config{
 		defaultLevel:     zerolog.InfoLevel,
@@ -167,13 +206,15 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 	}
 }
 
-// ParseLevel parses a string representation of a log level and returns the corresponding zerolog.Level.
-// It takes a single argument:
-//   - levelStr: a string representing the log level (e.g., "debug", "info", "warn", "error").
-//
-// It returns:
-//   - zerolog.Level: the parsed log level.
-//   - error: an error if the log level string is invalid.
+/*
+ParseLevel parses a string representation of a log level and returns the corresponding zerolog.Level.
+It takes a single argument:
+  - levelStr: a string representing the log level (e.g., "debug", "info", "warn", "error").
+
+It returns:
+  - zerolog.Level: the parsed log level.
+  - error: an error if the log level string is invalid.
+*/
 func ParseLevel(levelStr string) (zerolog.Level, error) {
 	return zerolog.ParseLevel(levelStr)
 }
@@ -208,17 +249,19 @@ func getLogEvent(rl zerolog.Logger, cfg *config, c *gin.Context, path string) *z
 	}
 }
 
-// GetLogger retrieves the zerolog.Logger instance from the given gin.Context.
-// It assumes that the logger has been previously set in the context with the key loggerKey.
-// If the logger is not found, it will panic.
-//
-// Parameters:
-//
-//	c - the gin.Context from which to retrieve the logger.
-//
-// Returns:
-//
-//	zerolog.Logger - the logger instance stored in the context.
+/*
+GetLogger retrieves the zerolog.Logger instance from the given gin.Context.
+It assumes that the logger has been previously set in the context with the key loggerKey.
+If the logger is not found, it will panic.
+
+Parameters:
+
+	c - the gin.Context from which to retrieve the logger.
+
+Returns:
+
+	zerolog.Logger - the logger instance stored in the context.
+*/
 func Get(c *gin.Context) zerolog.Logger {
 	return c.MustGet(loggerKey).(zerolog.Logger)
 }
