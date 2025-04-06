@@ -99,28 +99,28 @@ SetLogger returns a gin.HandlerFunc (middleware) that logs requests using zerolo
 It accepts a variadic number of Option functions to customize the logger's behavior.
 
 The logger configuration includes:
-- defaultLevel: the default logging level (default: zerolog.InfoLevel).
-- clientErrorLevel: the logging level for client errors (default: zerolog.WarnLevel).
-- serverErrorLevel: the logging level for server errors (default: zerolog.ErrorLevel).
-- output: the output writer for the logger (default: gin.DefaultWriter).
-- skipPath: a list of paths to skip logging.
-- skipPathRegexps: a list of regular expressions to skip logging for matching paths.
-- logger: a custom logger function to use instead of the default logger.
+  - defaultLevel: the default logging level (default: zerolog.InfoLevel).
+  - clientErrorLevel: the logging level for client errors (default: zerolog.WarnLevel).
+  - serverErrorLevel: the logging level for server errors (default: zerolog.ErrorLevel).
+  - output: the output writer for the logger (default: gin.DefaultWriter).
+  - skipPath: a list of paths to skip logging.
+  - skipPathRegexps: a list of regular expressions to skip logging for matching paths.
+  - logger: a custom logger function to use instead of the default logger.
 
 The middleware logs the following request details:
-- method: the HTTP method of the request.
-- path: the URL path of the request.
-- ip: the client's IP address.
-- user_agent: the User-Agent header of the request.
-- status: the HTTP status code of the response.
-- latency: the time taken to process the request.
-- body_size: the size of the response body.
+  - method: the HTTP method of the request.
+  - path: the URL path of the request.
+  - ip: the client's IP address.
+  - user_agent: the User-Agent header of the request.
+  - status: the HTTP status code of the response.
+  - latency: the time taken to process the request.
+  - body_size: the size of the response body.
 
 The logging level for each request is determined based on the response status code:
-- clientErrorLevel for 4xx status codes.
-- serverErrorLevel for 5xx status codes.
-- defaultLevel for other status codes.
-- Custom levels can be set for specific paths using the pathLevels configuration.
+  - clientErrorLevel for 4xx status codes.
+  - serverErrorLevel for 5xx status codes.
+  - defaultLevel for other status codes.
+  - Custom levels can be set for specific paths using the pathLevels configuration.
 */
 func SetLogger(opts ...Option) gin.HandlerFunc {
 	cfg := &config{
