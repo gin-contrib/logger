@@ -49,6 +49,8 @@ type config struct {
 	pathLevels map[string]zerolog.Level
 	// message is a custom string that sets a log-message when http-request has finished
 	message string
+	// specificLevelByStatusCode is a map of specific status codes to log levels every request
+	specificLevelByStatusCode map[int]zerolog.Level
 }
 
 const loggerKey = "_gin-contrib/logger_"
@@ -190,7 +192,11 @@ func shouldSkipLogging(path string, skip map[string]struct{}, cfg *config, c *gi
 
 func getLogEvent(rl zerolog.Logger, cfg *config, c *gin.Context, path string) *zerolog.Event {
 	level, hasLevel := cfg.pathLevels[path]
+	specificLogLevel, hasSpecificLogLevel := cfg.specificLevelByStatusCode[c.Writer.Status()]
+
 	switch {
+	case hasSpecificLogLevel:
+		return rl.WithLevel(specificLogLevel).Ctx(c)
 	case c.Writer.Status() >= http.StatusBadRequest && c.Writer.Status() < http.StatusInternalServerError:
 		return rl.WithLevel(cfg.clientErrorLevel).Ctx(c)
 	case c.Writer.Status() >= http.StatusInternalServerError:
