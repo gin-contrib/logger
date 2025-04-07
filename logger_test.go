@@ -317,7 +317,7 @@ func TestLoggerErrors(t *testing.T) {
 	r.Use(SetLogger(WithWriter(buffer)))
 	r.GET("/example", func(c *gin.Context) {
 		if c.Request.URL.RawQuery != "" {
-			c.Error(fmt.Errorf("unsupported query: %q", c.Request.URL.RawQuery))
+			_ = c.Error(fmt.Errorf("unsupported query: %q", c.Request.URL.RawQuery))
 		}
 	})
 
