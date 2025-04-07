@@ -310,6 +310,29 @@ func TestLoggerSkipper(t *testing.T) {
 	assert.NotContains(t, buffer.String(), "/example2")
 }
 
+func TestLoggerErrors(t *testing.T) {
+	buffer := new(bytes.Buffer)
+	gin.SetMode(gin.ReleaseMode)
+	r := gin.New()
+	r.Use(SetLogger(WithWriter(buffer)))
+	r.GET("/example", func(c *gin.Context) {
+		if c.Request.URL.RawQuery != "" {
+			c.Error(fmt.Errorf("unsupported query: %q", c.Request.URL.RawQuery))
+		}
+	})
+
+	performRequest(r, "GET", "/example?oops")
+	assert.Contains(t, buffer.String(), "GET")
+	assert.Contains(t, buffer.String(), "/example")
+	assert.Contains(t, buffer.String(), "error")
+
+	buffer.Reset()
+	performRequest(r, "GET", "/example")
+	assert.Contains(t, buffer.String(), "GET")
+	assert.Contains(t, buffer.String(), "/example")
+	assert.NotContains(t, buffer.String(), "error")
+}
+
 func BenchmarkLogger(b *testing.B) {
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()
