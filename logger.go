@@ -183,8 +183,9 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 			}
 			latency := end.Sub(start)
 
+			msg := cfg.message
 			if len(c.Errors) > 0 {
-				cfg.message += " with errors: " + c.Errors.String()
+				msg += " with errors: " + c.Errors.String()
 			}
 
 			evt := getLogEvent(rl, cfg, c, path)
@@ -201,7 +202,7 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 				Dur("latency", latency).
 				Str("user_agent", c.Request.UserAgent()).
 				Int("body_size", c.Writer.Size()).
-				Msg(cfg.message)
+				Msg(msg)
 		}
 	}
 }
