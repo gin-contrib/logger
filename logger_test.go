@@ -3,6 +3,7 @@ package logger
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -333,7 +334,7 @@ func TestLoggerCustomMessageWithErrors(t *testing.T) {
 		WithMessage("Custom message"),
 	))
 	r.GET("/example", func(c *gin.Context) {
-		c.Error(fmt.Errorf("custom error"))
+		_ = c.Error(errors.New("custom error"))
 	})
 
 	performRequest(r, "GET", "/example")
