@@ -3,6 +3,7 @@ package logger
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -308,6 +309,43 @@ func TestLoggerSkipper(t *testing.T) {
 	performRequest(r, "GET", "/example2")
 	assert.NotContains(t, buffer.String(), "GET")
 	assert.NotContains(t, buffer.String(), "/example2")
+}
+
+func TestLoggerCustomMessage(t *testing.T) {
+	buffer := new(bytes.Buffer)
+	gin.SetMode(gin.ReleaseMode)
+	r := gin.New()
+	r.Use(SetLogger(
+		WithWriter(buffer),
+		WithMessage("Custom message"),
+	))
+	r.GET("/example", func(c *gin.Context) {})
+
+	performRequest(r, "GET", "/example")
+	assert.Contains(t, buffer.String(), "Custom message")
+}
+
+func TestLoggerCustomMessageWithErrors(t *testing.T) {
+	buffer := new(bytes.Buffer)
+	gin.SetMode(gin.ReleaseMode)
+	r := gin.New()
+	r.Use(SetLogger(
+		WithWriter(buffer),
+		WithMessage("Custom message"),
+	))
+	r.GET("/example", func(c *gin.Context) {
+		_ = c.Error(errors.New("custom error"))
+	})
+
+	performRequest(r, "GET", "/example")
+	assert.Contains(t, buffer.String(), "Custom message with errors: ")
+	assert.Equal(t, strings.Count(buffer.String(), " with errors: "), 1)
+
+	// Reset and test again to make sure we're not appending to the existing error message
+	buffer.Reset()
+	performRequest(r, "GET", "/example")
+	assert.Contains(t, buffer.String(), "Custom message with errors: ")
+	assert.Equal(t, strings.Count(buffer.String(), " with errors: "), 1)
 }
 
 func TestLoggerPathNoQuery(t *testing.T) {
