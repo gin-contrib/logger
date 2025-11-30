@@ -117,8 +117,8 @@ func main() {
 		}),
 		logger.WithMessage("Request ended"),
 	), func(c *gin.Context) {
-		c.Error(errors.New("some error has occured here"))
-		c.Error(errors.New("and some error has occured there"))
+		_ = c.Error(errors.New("some error has occurred here"))
+		_ = c.Error(errors.New("and some error has occurred there"))
 		c.String(http.StatusBadGateway, "pong "+fmt.Sprint(time.Now().Unix()))
 	})
 
@@ -132,10 +132,10 @@ func main() {
 		}),
 		logger.WithSpecificLogLevelByStatusCode(specificLevels),
 	), func(c *gin.Context) {
-		//with http-400 StatusBadRequest, it must follow the normal execution, in this case, the log level is warn
-		//c.String(http.StatusBadRequest, "pong 429 "+fmt.Sprint(time.Now().Unix()))
+		// with http-400 StatusBadRequest, it must follow the normal execution, in this case, the log level is warn
+		// c.String(http.StatusBadRequest, "pong 429 "+fmt.Sprint(time.Now().Unix()))
 
-		//with http-429 StatusTooManyRequests, it must follow the specific log level defined for this status code (trace)
+		// with http-429 StatusTooManyRequests, it must follow the specific log level defined for this status code (trace)
 		c.String(http.StatusTooManyRequests, "pong 429 "+fmt.Sprint(time.Now().Unix()))
 	})
 
@@ -154,8 +154,8 @@ func main() {
 			return e.Any("data1", c.MustGet("data1")).Any("data2", c.MustGet("data2"))
 		}),
 	), func(c *gin.Context) {
-		c.Set("data1", rand.Intn(100))
-		c.Set("data2", rand.Intn(100))
+		c.Set("data1", rand.Intn(100)) //nolint:gosec // example code, not for security
+		c.Set("data2", rand.Intn(100)) //nolint:gosec // example code, not for security
 		c.String(http.StatusOK, "pong "+fmt.Sprint(time.Now().Unix()))
 	})
 
