@@ -269,3 +269,9 @@ func WithSpecificLogLevelByStatusCode(statusCodes map[int]zerolog.Level) Option 
 		c.specificLevelByStatusCode = statusCodes
 	})
 }
+
+func WithPathNoQuery(b bool) Option {
+	return optionFunc(func(c *config) {
+		c.pathNoQuery = b
+	})
+}
