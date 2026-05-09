@@ -23,7 +23,7 @@ type header struct {
 }
 
 func performRequest(r http.Handler, method, path string, headers ...header) *httptest.ResponseRecorder {
-	req := httptest.NewRequest(method, path, nil)
+	req := httptest.NewRequestWithContext(context.Background(), method, path, nil)
 	for _, h := range headers {
 		req.Header.Add(h.Key, h.Value)
 	}
