@@ -136,6 +136,23 @@ func main() {
     })
   }
 
+  // Example of WithPathNoQuery usage
+  nq := r.Group("/no-query", logger.SetLogger(
+    logger.WithPathNoQuery(true),
+    logger.WithPathLevel(map[string]zerolog.Level{
+      // normally this wouldn't match /no-query/boring?foo, but WithPathNoQuery(true) makes it match
+      "/no-query/boring": zerolog.DebugLevel,
+    }),
+  ))
+  {
+    nq.GET("/boring", func(c *gin.Context) {
+      c.String(http.StatusOK, "OK")
+    })
+    nq.GET("/interesting", func(c *gin.Context) {
+      c.String(http.StatusOK, "OK")
+    })
+  }
+
   // Listen and Server in 0.0.0.0:8080
   if err := r.Run(":8080"); err != nil {
     log.Fatal().Msg("can' start server with 8080 port")
