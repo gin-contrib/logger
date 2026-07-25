@@ -81,6 +81,12 @@ type config struct {
 	*/
 	pathLevels map[string]zerolog.Level
 	/*
+		pathNoQuery specifies if the path should be handled without the query
+		string for both logging and matching against pathLevels. If enabled, the
+		query string will be logged in its own field.
+	*/
+	pathNoQuery bool
+	/*
 		message is a custom string that sets a log-message when http-request has finished
 	*/
 	message string
@@ -157,17 +163,22 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 
 		start := time.Now()
 		path := c.Request.URL.Path
-		if raw := c.Request.URL.RawQuery; raw != "" {
-			path += "?" + raw
+		rawQuery := c.Request.URL.RawQuery
+		if rawQuery != "" && !cfg.pathNoQuery {
+			path += "?" + rawQuery
 		}
 
 		track := !shouldSkipLogging(path, skip, cfg, c)
 
 		contextLogger := rl
 		if track {
-			contextLogger = rl.With().
+			rlc := rl.With().
 				Str("method", c.Request.Method).
-				Str("path", path).
+				Str("path", path)
+			if cfg.pathNoQuery && rawQuery != "" {
+				rlc = rlc.Str("query", rawQuery)
+			}
+			contextLogger = rlc.
 				Str("ip", c.ClientIP()).
 				Str("user_agent", c.Request.UserAgent()).
 				Logger()
@@ -194,10 +205,14 @@ func SetLogger(opts ...Option) gin.HandlerFunc {
 				evt = cfg.context(c, evt)
 			}
 
-			evt.
+			evt = evt.
 				Int("status", c.Writer.Status()).
 				Str("method", c.Request.Method).
-				Str("path", path).
+				Str("path", path)
+			if cfg.pathNoQuery && rawQuery != "" {
+				evt = evt.Str("query", rawQuery)
+			}
+			evt.
 				Str("ip", c.ClientIP()).
 				Dur("latency", latency).
 				Str("user_agent", c.Request.UserAgent()).
