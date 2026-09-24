@@ -348,6 +348,43 @@ func TestLoggerCustomMessageWithErrors(t *testing.T) {
 	assert.Equal(t, strings.Count(buffer.String(), " with errors: "), 1)
 }
 
+func TestLoggerPathNoQuery(t *testing.T) {
+	buffer := new(bytes.Buffer)
+	gin.SetMode(gin.ReleaseMode)
+	r := gin.New()
+	r.Use(SetLogger(
+		WithWriter(buffer),
+		WithPathNoQuery(true),
+		WithPathLevel(map[string]zerolog.Level{
+			"/example2": zerolog.WarnLevel,
+		}),
+	))
+	r.GET("/example", func(c *gin.Context) {
+		l := Get(c)
+		l.Debug().Msg("contextlogger")
+	})
+	r.GET("/example2", func(c *gin.Context) {})
+
+	performRequest(r, "GET", "/example?foo=bar")
+	lines := strings.Split(strings.TrimSpace(buffer.String()), "\n")
+	assert.Len(t, lines, 2)
+	for i, line := range lines {
+		assert.Contains(t, line, " query=foo=bar ", "line %d", i)
+	}
+
+	// with no query string, the field should be omitted
+	buffer.Reset()
+	performRequest(r, "GET", "/example")
+	assert.NotContains(t, buffer.String(), "query=")
+
+	buffer.Reset()
+	performRequest(r, "GET", "/example2?foo=bar")
+	// this one should be logged at warn level because the query-free path matches
+	// the level map entry
+	assert.Contains(t, buffer.String(), "WRN")
+	assert.Contains(t, buffer.String(), " query=foo=bar ")
+}
+
 func BenchmarkLogger(b *testing.B) {
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()
