@@ -22,7 +22,11 @@ type header struct {
 	Value string
 }
 
-func performRequest(r http.Handler, method, path string, headers ...header) *httptest.ResponseRecorder {
+func performRequest(
+	r http.Handler,
+	method, path string,
+	headers ...header,
+) *httptest.ResponseRecorder {
 	req := httptest.NewRequestWithContext(context.Background(), method, path, nil)
 	for _, h := range headers {
 		req.Header.Add(h.Key, h.Value)
@@ -184,7 +188,9 @@ func TestCustomLoggerIssue68(t *testing.T) {
 	// Use JSON logger as it will explicitly print keys multiple times if they are added multiple times,
 	// which may happen if there are mutations to the logger.
 	r.Use(SetLogger(
-		WithLogger(func(_ *gin.Context, l zerolog.Logger) zerolog.Logger { return l.Output(buffer).With().Logger() }),
+		WithLogger(
+			func(_ *gin.Context, l zerolog.Logger) zerolog.Logger { return l.Output(buffer).With().Logger() },
+		),
 		WithDefaultLevel(zerolog.DebugLevel),
 		WithClientErrorLevel(zerolog.ErrorLevel),
 		WithServerErrorLevel(zerolog.FatalLevel),
@@ -193,7 +199,7 @@ func TestCustomLoggerIssue68(t *testing.T) {
 
 	// concurrent requests should only have their info logged once
 	var wg sync.WaitGroup
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		wg.Add(1)
 		req := fmt.Sprintf("/example?a=%d", i)
 		go func() {
@@ -204,7 +210,7 @@ func TestCustomLoggerIssue68(t *testing.T) {
 	wg.Wait()
 
 	bs := buffer.b.String()
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		// should contain each request log exactly once
 		msg := fmt.Sprintf("/example?a=%d", i)
 		if assert.Contains(t, bs, msg) {
@@ -339,13 +345,13 @@ func TestLoggerCustomMessageWithErrors(t *testing.T) {
 
 	performRequest(r, "GET", "/example")
 	assert.Contains(t, buffer.String(), "Custom message with errors: ")
-	assert.Equal(t, strings.Count(buffer.String(), " with errors: "), 1)
+	assert.Equal(t, 1, strings.Count(buffer.String(), " with errors: "))
 
 	// Reset and test again to make sure we're not appending to the existing error message
 	buffer.Reset()
 	performRequest(r, "GET", "/example")
 	assert.Contains(t, buffer.String(), "Custom message with errors: ")
-	assert.Equal(t, strings.Count(buffer.String(), " with errors: "), 1)
+	assert.Equal(t, 1, strings.Count(buffer.String(), " with errors: "))
 }
 
 func BenchmarkLogger(b *testing.B) {
@@ -360,7 +366,7 @@ func BenchmarkLogger(b *testing.B) {
 	b.ResetTimer()
 
 	b.RunParallel(func(pb *testing.PB) {
-		req, err := http.NewRequestWithContext(context.Background(), "GET", "/", nil)
+		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "/", nil)
 		if err != nil {
 			b.Errorf("NewRequestWithContext() error = %v", err)
 			return
