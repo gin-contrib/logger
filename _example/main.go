@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/gin-contrib/logger"
+
 	"github.com/gin-contrib/requestid"
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog"
@@ -163,7 +164,8 @@ func main() {
 	v1 := r.Group("/v1", logger.SetLogger(
 		logger.WithSkipper(func(c *gin.Context) bool {
 			return c.Request.Method == "GET"
-		})))
+		}),
+	))
 	{
 		v1.GET("/ping", func(c *gin.Context) {
 			c.String(http.StatusOK, "pong01 "+fmt.Sprint(time.Now().Unix()))
