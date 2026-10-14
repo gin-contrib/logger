@@ -1,0 +1,109 @@
+name: Run benchmark
+
+# Cancel the workflow in progress in newer build is about to start.
+concurrency:
+    group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+    cancel-in-progress: true
+  
+on:
+    pull_request:
+
+permissions:
+    contents: read
+    pull-requests: write
+
+jobs:
+    benchmark-pr:
+        runs-on: ubuntu-latest
+        outputs:
+          result: ${{ steps.benchmark.outputs.result }}
+        steps:
+          - name: Setup go
+            uses: actions/setup-go@v5
+            with:
+              go-version: "1.21"
+          - name: Checkout repository
+            uses: actions/checkout@v4
+
+          - name: Run benchmark on commit
+            id: benchmark
+            run: |
+              echo "result<<EOF" >> "$GITHUB_OUTPUT"
+              go test -bench=. -benchmem -count=20 -run=^# >> "$GITHUB_OUTPUT"
+              echo "EOF" >> "$GITHUB_OUTPUT"
+
+    benchmark-master:
+        runs-on: ubuntu-latest
+        outputs:
+          result: ${{ steps.benchmark.outputs.result }}
+        steps:
+          - name: Setup go
+            uses: actions/setup-go@v5
+            with:
+              go-version: "1.21"
+          - name: Switch to master branch
+            uses: actions/checkout@v4
+            with:
+              ref: master
+          - name: Run benchmark on master
+            id: benchmark
+            run: |
+              echo "result<<EOF" >> "$GITHUB_OUTPUT"
+              go test -bench=. -benchmem -count=20 -run=^# >> "$GITHUB_OUTPUT"
+              echo "EOF" >> "$GITHUB_OUTPUT"
+
+    benchmark:
+        runs-on: ubuntu-latest
+        needs: [benchmark-pr, benchmark-master]
+        permissions:
+            pull-requests: write        
+        steps:
+          - name: Setup go
+            uses: actions/setup-go@v5
+            with:
+              go-version: "1.21"
+          - name: Restore benchstat
+            id: cache-benchstat
+            uses: actions/cache@v3
+            with:
+              path: ~/go/bin/benchstat
+              key: ${{ runner.os }}-benchstat
+          - name: Install benchstat
+            if: steps.cache-benchstat.outputs.cache-hit != 'true'
+            run: go install golang.org/x/perf/cmd/benchstat@latest
+          - name: Save benchstat
+            if: steps.cache-benchstat.outputs.cache-hit != 'true'
+            uses: actions/cache/save@v3
+            with:
+              path: ~/go/bin/benchstat
+              key: ${{ steps.cache-benchstat.outputs.cache-primary-key }}
+
+          - name: Compare benchmarks
+            id: compare
+            run: |
+              echo "${{ needs.benchmark-pr.outputs.result }}" > pr.bench
+              echo "${{ needs.benchmark-master.outputs.result }}" > master.bench
+              echo "STAT<<EOF" >> "$GITHUB_OUTPUT"
+              benchstat master.bench pr.bench >> "$GITHUB_OUTPUT"
+              echo "EOF" >> "$GITHUB_OUTPUT"
+          - name: Comment benchmark result
+            if: ${{ !env.ACT }}
+            continue-on-error: true
+            uses: marocchino/sticky-pull-request-comment@v2
+            with:
+              header: bench
+              hide: true
+              hide_classify: "OUTDATED"
+              message: |
+                ### Benchmark Result
+                <details><summary>Benchmark result compared against master branch</summary>
+      
+                ```
+                ${{ steps.compare.outputs.STAT }}
+                ```
+                </details>
+          - name: Display result on command line when using act
+            if: ${{ env.ACT }}
+            run: |
+              echo "Benchmark result compared against master branch"
+              echo "${{ steps.compare.outputs.STAT }}"
