@@ -2,10 +2,10 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"math/rand"
 	"net/http"
 	"regexp"
+	"strconv"
 	"time"
 
 	"github.com/gin-contrib/logger"
@@ -47,7 +47,7 @@ func main() {
 
 	// Example pong request.
 	r.GET("/pong", logger.SetLogger(), func(c *gin.Context) {
-		c.String(http.StatusOK, "pong "+fmt.Sprint(time.Now().Unix()))
+		c.String(http.StatusOK, "pong "+strconv.FormatInt(time.Now().Unix(), 10))
 	})
 
 	// Example ping request.
@@ -56,28 +56,28 @@ func main() {
 		logger.WithUTC(true),
 		logger.WithSkipPathRegexps(rxURL),
 	), func(c *gin.Context) {
-		c.String(http.StatusOK, "pong "+fmt.Sprint(time.Now().Unix()))
+		c.String(http.StatusOK, "pong "+strconv.FormatInt(time.Now().Unix(), 10))
 	})
 
 	// Example skip path request.
 	r.GET("/skip", logger.SetLogger(
 		logger.WithSkipPath([]string{"/skip"}),
 	), func(c *gin.Context) {
-		c.String(http.StatusOK, "pong "+fmt.Sprint(time.Now().Unix()))
+		c.String(http.StatusOK, "pong "+strconv.FormatInt(time.Now().Unix(), 10))
 	})
 
 	// Example skip path request.
 	r.GET("/regexp1", logger.SetLogger(
 		logger.WithSkipPathRegexps(rxURL),
 	), func(c *gin.Context) {
-		c.String(http.StatusOK, "pong "+fmt.Sprint(time.Now().Unix()))
+		c.String(http.StatusOK, "pong "+strconv.FormatInt(time.Now().Unix(), 10))
 	})
 
 	// Example skip path request.
 	r.GET("/regexp2", logger.SetLogger(
 		logger.WithSkipPathRegexps(rxURL),
 	), func(c *gin.Context) {
-		c.String(http.StatusOK, "pong "+fmt.Sprint(time.Now().Unix()))
+		c.String(http.StatusOK, "pong "+strconv.FormatInt(time.Now().Unix(), 10))
 	})
 
 	// add custom fields.
@@ -99,7 +99,7 @@ func main() {
 				Logger()
 		}),
 	), func(c *gin.Context) {
-		c.String(http.StatusOK, "pong "+fmt.Sprint(time.Now().Unix()))
+		c.String(http.StatusOK, "pong "+strconv.FormatInt(time.Now().Unix(), 10))
 	})
 
 	// Example of JSON format log
@@ -108,7 +108,7 @@ func main() {
 			return l.Output(gin.DefaultWriter).With().Logger()
 		}),
 	), func(c *gin.Context) {
-		c.String(http.StatusOK, "pong "+fmt.Sprint(time.Now().Unix()))
+		c.String(http.StatusOK, "pong "+strconv.FormatInt(time.Now().Unix(), 10))
 	})
 
 	// Example of a custom message to the log
@@ -120,7 +120,7 @@ func main() {
 	), func(c *gin.Context) {
 		_ = c.Error(errors.New("some error has occurred here"))
 		_ = c.Error(errors.New("and some error has occurred there"))
-		c.String(http.StatusBadGateway, "pong "+fmt.Sprint(time.Now().Unix()))
+		c.String(http.StatusBadGateway, "pong "+strconv.FormatInt(time.Now().Unix(), 10))
 	})
 
 	// Example of specific status levels by http-status-codes
@@ -137,7 +137,7 @@ func main() {
 		// c.String(http.StatusBadRequest, "pong 429 "+fmt.Sprint(time.Now().Unix()))
 
 		// with http-429 StatusTooManyRequests, it must follow the specific log level defined for this status code (trace)
-		c.String(http.StatusTooManyRequests, "pong 429 "+fmt.Sprint(time.Now().Unix()))
+		c.String(http.StatusTooManyRequests, "pong 429 "+strconv.FormatInt(time.Now().Unix(), 10))
 	})
 
 	// Example of skipper usage
@@ -146,7 +146,7 @@ func main() {
 			return c.Request.URL.Path == "/health"
 		}),
 	), func(c *gin.Context) {
-		c.String(http.StatusOK, "pong "+fmt.Sprint(time.Now().Unix()))
+		c.String(http.StatusOK, "pong "+strconv.FormatInt(time.Now().Unix(), 10))
 	})
 
 	// Example of logging data on gin.Context
@@ -157,21 +157,21 @@ func main() {
 	), func(c *gin.Context) {
 		c.Set("data1", rand.Intn(100)) //nolint:gosec // example code, not for security
 		c.Set("data2", rand.Intn(100)) //nolint:gosec // example code, not for security
-		c.String(http.StatusOK, "pong "+fmt.Sprint(time.Now().Unix()))
+		c.String(http.StatusOK, "pong "+strconv.FormatInt(time.Now().Unix(), 10))
 	})
 
 	// Example of skipper usage
 	v1 := r.Group("/v1", logger.SetLogger(
 		logger.WithSkipper(func(c *gin.Context) bool {
-			return c.Request.Method == "GET"
+			return c.Request.Method == http.MethodGet
 		}),
 	))
 	{
 		v1.GET("/ping", func(c *gin.Context) {
-			c.String(http.StatusOK, "pong01 "+fmt.Sprint(time.Now().Unix()))
+			c.String(http.StatusOK, "pong01 "+strconv.FormatInt(time.Now().Unix(), 10))
 		})
 		v1.POST("/ping", func(c *gin.Context) {
-			c.String(http.StatusOK, "pong02 "+fmt.Sprint(time.Now().Unix()))
+			c.String(http.StatusOK, "pong02 "+strconv.FormatInt(time.Now().Unix(), 10))
 		})
 	}
 
