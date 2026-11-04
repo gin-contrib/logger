@@ -2,7 +2,6 @@ package logger
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -23,11 +22,12 @@ type header struct {
 }
 
 func performRequest(
+	t testing.TB,
 	r http.Handler,
 	method, path string,
 	headers ...header,
 ) *httptest.ResponseRecorder {
-	req := httptest.NewRequestWithContext(context.Background(), method, path, nil)
+	req := httptest.NewRequestWithContext(t.Context(), method, path, nil)
 	for _, h := range headers {
 		req.Header.Add(h.Key, h.Value)
 	}
@@ -53,7 +53,7 @@ func TestLogger(t *testing.T) {
 	r.HEAD("/example", func(c *gin.Context) {})
 	r.OPTIONS("/example", func(c *gin.Context) {})
 
-	resp := performRequest(r, "GET", "/example?a=100", header{"X-Request-Id", "123"})
+	resp := performRequest(t, r, "GET", "/example?a=100", header{"X-Request-Id", "123"})
 	assert.Equal(t, 200, resp.Code)
 	assert.Contains(t, buffer.String(), "200")
 	assert.Contains(t, buffer.String(), "GET")
@@ -61,7 +61,7 @@ func TestLogger(t *testing.T) {
 	assert.Contains(t, buffer.String(), "path=/example?a=100")
 
 	buffer.Reset()
-	performRequest(r, "POST", "/example?a=100")
+	performRequest(t, r, "POST", "/example?a=100")
 	assert.Contains(t, buffer.String(), "400")
 	assert.Contains(t, buffer.String(), "POST")
 	assert.Contains(t, buffer.String(), "/example")
@@ -69,7 +69,7 @@ func TestLogger(t *testing.T) {
 	assert.Contains(t, buffer.String(), "path=/example?a=100")
 
 	buffer.Reset()
-	performRequest(r, "PUT", "/example?a=100")
+	performRequest(t, r, "PUT", "/example?a=100")
 	assert.Contains(t, buffer.String(), "502")
 	assert.Contains(t, buffer.String(), "PUT")
 	assert.Contains(t, buffer.String(), "/example")
@@ -81,7 +81,7 @@ func TestLogger(t *testing.T) {
 		l := Get(ctx)
 		l.Info().Msg("additional log")
 	})
-	performRequest(r, "GET", "/example-with-additional-log")
+	performRequest(t, r, "GET", "/example-with-additional-log")
 	assert.Contains(t, buffer.String(), "200")
 	assert.Contains(t, buffer.String(), "GET")
 	assert.Contains(t, buffer.String(), "/example-with-additional-log")
@@ -120,23 +120,23 @@ func TestLoggerWithLogger(t *testing.T) {
 		WithSkipPathRegexps(rxURL),
 	), func(c *gin.Context) {})
 
-	performRequest(r, "GET", "/example?a=100")
+	performRequest(t, r, "GET", "/example?a=100")
 	assert.Contains(t, buffer.String(), "foo")
 	assert.Contains(t, buffer.String(), "bar")
 	assert.Contains(t, buffer.String(), "/example")
 
 	buffer.Reset()
-	performRequest(r, "GET", "/example2")
+	performRequest(t, r, "GET", "/example2")
 	assert.NotContains(t, buffer.String(), "foo")
 	assert.NotContains(t, buffer.String(), "bar")
 	assert.NotContains(t, buffer.String(), "/example2")
 
 	buffer.Reset()
-	performRequest(r, "GET", "/regexp01")
+	performRequest(t, r, "GET", "/regexp01")
 	assert.NotContains(t, buffer.String(), "/regexp01")
 
 	buffer.Reset()
-	performRequest(r, "GET", "/regexp02")
+	performRequest(t, r, "GET", "/regexp02")
 	assert.NotContains(t, buffer.String(), "/regexp02")
 }
 
@@ -158,15 +158,15 @@ func TestLoggerWithLevels(t *testing.T) {
 		c.String(http.StatusBadGateway, "ok")
 	})
 
-	performRequest(r, "GET", "/example?a=100")
+	performRequest(t, r, "GET", "/example?a=100")
 	assert.Contains(t, buffer.String(), "DBG")
 
 	buffer.Reset()
-	performRequest(r, "POST", "/example?a=100")
+	performRequest(t, r, "POST", "/example?a=100")
 	assert.Contains(t, buffer.String(), "ERR")
 
 	buffer.Reset()
-	performRequest(r, "PUT", "/example?a=100")
+	performRequest(t, r, "PUT", "/example?a=100")
 	assert.Contains(t, buffer.String(), "FTL")
 }
 
@@ -204,7 +204,7 @@ func TestCustomLoggerIssue68(t *testing.T) {
 		req := fmt.Sprintf("/example?a=%d", i)
 		go func() {
 			defer wg.Done()
-			performRequest(r, "GET", req)
+			performRequest(t, r, "GET", req)
 		}()
 	}
 	wg.Wait()
@@ -278,19 +278,19 @@ func TestLoggerCustomLevel(t *testing.T) {
 	})
 	r.GET("/example2", func(c *gin.Context) {})
 
-	performRequest(r, "GET", "/example")
+	performRequest(t, r, "GET", "/example")
 	assert.Contains(t, buffer.String(), "DBG")
 
 	buffer.Reset()
-	performRequest(r, "GET", "/example2")
+	performRequest(t, r, "GET", "/example2")
 	assert.Contains(t, buffer.String(), "INF")
 
 	buffer.Reset()
-	performRequest(r, "POST", "/example")
+	performRequest(t, r, "POST", "/example")
 	assert.Contains(t, buffer.String(), "ERR")
 
 	buffer.Reset()
-	performRequest(r, "PUT", "/example")
+	performRequest(t, r, "PUT", "/example")
 	assert.Contains(t, buffer.String(), "FTL")
 }
 
@@ -307,12 +307,12 @@ func TestLoggerSkipper(t *testing.T) {
 	r.GET("/example", func(c *gin.Context) {})
 	r.GET("/example2", func(c *gin.Context) {})
 
-	performRequest(r, "GET", "/example")
+	performRequest(t, r, "GET", "/example")
 	assert.Contains(t, buffer.String(), "GET")
 	assert.Contains(t, buffer.String(), "/example")
 
 	buffer.Reset()
-	performRequest(r, "GET", "/example2")
+	performRequest(t, r, "GET", "/example2")
 	assert.NotContains(t, buffer.String(), "GET")
 	assert.NotContains(t, buffer.String(), "/example2")
 }
@@ -327,7 +327,7 @@ func TestLoggerCustomMessage(t *testing.T) {
 	))
 	r.GET("/example", func(c *gin.Context) {})
 
-	performRequest(r, "GET", "/example")
+	performRequest(t, r, "GET", "/example")
 	assert.Contains(t, buffer.String(), "Custom message")
 }
 
@@ -343,13 +343,13 @@ func TestLoggerCustomMessageWithErrors(t *testing.T) {
 		_ = c.Error(errors.New("custom error"))
 	})
 
-	performRequest(r, "GET", "/example")
+	performRequest(t, r, "GET", "/example")
 	assert.Contains(t, buffer.String(), "Custom message with errors: ")
 	assert.Equal(t, 1, strings.Count(buffer.String(), " with errors: "))
 
 	// Reset and test again to make sure we're not appending to the existing error message
 	buffer.Reset()
-	performRequest(r, "GET", "/example")
+	performRequest(t, r, "GET", "/example")
 	assert.Contains(t, buffer.String(), "Custom message with errors: ")
 	assert.Equal(t, 1, strings.Count(buffer.String(), " with errors: "))
 }
@@ -366,7 +366,7 @@ func BenchmarkLogger(b *testing.B) {
 	b.ResetTimer()
 
 	b.RunParallel(func(pb *testing.PB) {
-		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "/", nil)
+		req, err := http.NewRequestWithContext(b.Context(), http.MethodGet, "/", nil)
 		if err != nil {
 			b.Errorf("NewRequestWithContext() error = %v", err)
 			return
