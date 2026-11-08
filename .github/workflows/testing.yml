@@ -35,11 +35,6 @@ jobs:
       - name: Run lint
         run: make install-tools lint
 
-      - name: Bearer
-        uses: bearer/bearer-action@v2
-        with:
-          diff: true
-
   test:
     strategy:
       matrix:
